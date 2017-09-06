@@ -1,0 +1,13 @@
+#!/bin/bash
+gnuplot -p << EOF
+set term x11 0
+set xlabel "Time (seconds)"
+set ylabel "Velocity"
+plot 'cmake-build-debug/ExactEulerResult.dat' using 1:2 with linespoint
+replot 'cmake-build-debug/MarkovEulerResult.dat' using 1:2 with linespoint
+set term x11 1
+set xlabel "Time (seconds)"
+set ylabel "Control value"
+plot 'cmake-build-debug/ExactControl.dat' using 1:2
+replot 'cmake-build-debug/MarkovControl.dat' using 1:2
+EOF
