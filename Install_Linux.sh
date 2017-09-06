@@ -30,3 +30,4 @@ mkdir build
 cd build
 cmake ..
 make
+echo "~~~ FINISHED ~~~"

@@ -30,3 +30,11 @@
 *.exe
 *.out
 *.app
+
+# Documentation files
+# TODO
+
+# Dependency libraries
+c3
+c3sc
+cydn
