@@ -28,6 +28,6 @@ echo "~~~ INSTALLING HIGH-PERFORMANCE-CONTROL ~~~"
 cd hpc
 mkdir build
 cd build
-cmake ..
+cmake ../Project_C++_Files
 make
 echo "~~~ FINISHED ~~~"

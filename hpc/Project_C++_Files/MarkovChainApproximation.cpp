@@ -277,9 +277,10 @@ unsigned int MarkovChainApproximation::getGridIndexClosestTo(double x)
     for (unsigned int i = 1; i < newV_->size(); ++i)
     {
         double gridLoc = getGridAtIndex(i);
-        if (gridLoc - x < minDistance)
+        if (abs(gridLoc - x) < minDistance)
         {
             closestGridIndex = i;
+            minDistance = abs(gridLoc - x);
         }
     }
 
