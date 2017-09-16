@@ -3,9 +3,6 @@
  *
  * This script is given as an example on how to access the Markov Chain Approximation library (the 1d version), and how
  * to access the continuous decomposition library. This script also shows how we can compare the two files.
- * TODO: Write header comment
- *
- *
  */
 
 #include <cmath>
@@ -19,8 +16,9 @@
 #include "EulerMethod.h"
 extern "C"
 {
-// #include "c3.h"
-// #include "c3sc.h"
+#include "c3/c3.h"
+#include "c3sc/c3sc.h"
+#include "c3sc/bellman.h"
 }
 
 using namespace std;
@@ -34,30 +32,36 @@ int main()
     double exitingBound = 3.0;
     double initGuess = 2.0;
 
+    // Here we create a std::function for the ODE derivative. This is made from the problem ODE given in "functions.h"
+    // and matched with the exact minimum control value needed for optimal control (that is the analytical exact value)
     std::function<double(double)> fcnExactControl = exactMinimumControl;
     const std::function<double(double, double)> fcnDerivativeExact = [](double f, double x)
     {
         return problemOde(f, exactMinimumControl(f));
     };
 
+    // We use the Euler Method class (giving it it's bounding grid)
     EulerMethod euler(startingBound, exitingBound, euler_grid_size);
+    // And then solve the ODE using Euler's method and the function for the derivative we put together before
     euler.solve(fcnDerivativeExact, initGuess);
 
-    // Create file with exact data
+    // Create file and load it with the exact data results (the state space)
     ofstream exactEulerFile;
     exactEulerFile.open("ExactEulerResult.dat", std::ofstream::out);
     if (exactEulerFile.good())
     {
         exactEulerFile << "t f\n";
+        // Euler mantains data in a vector, but we can call the getSolutionPtr to request it as a double** (c-style 2-di
+        // mensional array.
         double** result = euler.getSolutionPtr();
         for (int i = 0; i < euler.getGridLength(); ++i)
         {
-            // Fill control variable for plotting
+            // File is filled with the x-grid and y-grid (creating a 2D plot)
             exactEulerFile << result[i][GRID] << " " << result[i][FUNC] << endl;
         }
         exactEulerFile.close();
     }
-    // Also create file with control data
+    // Also create file with the optimal control
     ofstream exactControl;
     exactControl.open("ExactControl.dat", std::ofstream::out);
     if (exactControl.good())
@@ -66,7 +70,7 @@ int main()
         double** result = euler.getSolutionPtr();
         for (int i = 0; i < euler.getGridLength(); ++i)
         {
-            // Fill control variable for plotting
+            // File is filled with the x-grid and y-grid (creating a 2D plot)
             exactControl << result[i][GRID] << " " << exactMinimumControl(result[i][FUNC]) << endl;
         }
         exactControl.close();
@@ -82,6 +86,7 @@ int main()
     double markovInitGuess = 2.0;
     const std::function<double(double,double)> fcnCost = costFunction;
 
+    // Markov Chain Approximation (MCA) will solve the optimal cost values and ODE values at each point
     MarkovChainApproximation markovCA(alphaStartingBound,
                                       alphaExitingBound,
                                       markov_alpha_discretisation_size,
@@ -95,10 +100,12 @@ int main()
     const std::function<double(double, double)> fcnOde = problemOde;
     markovCA.computeMarkovApproximation(fcnCost, fcnSigma);
 
+    // The EulerMethod function has a solve that allows you to pass it the MCA object, and thus it utilises the MCA
+    // ODE state space results and optimal control results.
     const std::function<double(double, double)> fcnDerivativeMarkov = problemOde;
     euler.solve(fcnDerivativeMarkov, markovCA, initGuess);
 
-    // Create file with exact data
+    // Create file with exact data (same as before)
     ofstream markovEulerFile;
     markovEulerFile.open("MarkovEulerResult.dat", std::ofstream::out);
     if (markovEulerFile.good())
@@ -107,12 +114,11 @@ int main()
         double** result = euler.getSolutionPtr();
         for (int i = 0; i < euler.getGridLength(); ++i)
         {
-            // Control data is already set in the Euler solve
             markovEulerFile << result[i][GRID] << " " << result[i][FUNC] << endl;
         }
         markovEulerFile.close();
     }
-    // Also create file with markov control data
+    // Also create file with MCA optimal control data
     ofstream markovControlFile;
     markovControlFile.open("MarkovControl.dat", std::ofstream::out);
     if (markovControlFile.good())
@@ -121,7 +127,6 @@ int main()
         double** result = euler.getSolutionPtr();
         for (int i = 0; i < euler.getGridLength(); ++i)
         {
-            // Control data is already set in the Euler solve
             markovControlFile << result[i][GRID] << " " << markovCA.getMarkovControlFunction(result[i][FUNC]) << endl;
         }
         markovControlFile.close();
@@ -129,7 +134,8 @@ int main()
 
     // ----------------------------------------------------------------------------------------------------------- C3 //
     // Now test the C3 (Tensor decomposition method) ------------------------------------ //
-    /*size_t dim = 2;
+    // First we set all the "scene" parameters
+    size_t dim = 2;
     size_t dx = dim;
     size_t dw = dim;
     size_t du = 1;
@@ -144,10 +150,34 @@ int main()
         Narr[i] = N;
     }
     double beta = 0.1;
+    // Now with those parameters we "set the scene"
     struct C3Control* c3c = c3control_create(dx, du, dw, lb, ub, Narr, beta);
-    c3control_destroy(c3c);*/
+
+    // We have created the C3Control scene, but now we need to add a diffusion equation (our ODE) to it
+    c3control_add_diff(c3c, s1, nullptr);
+    // No drift in this particular example but can add it in the same way as with adding diffusion, except by calling
+    // the method: c3control_add_drift
+
+    // Now add the cost function to the scene. Other costs can be added, such as boundary costs and obstacle costs.
+    c3control_add_stagecost(c3c, stagecost);
+
+
+    // ???
+    char filename[256];
+    sprintf(filename, "%s/%s.c3", dirout,"cost");
+    double ** xgrid = c3control_get_xgrid(c3c);
+    struct ValueF * cost = valuef_load(filename, Narr, xgrid);
+    if (cost == nullptr){
+        cost = c3control_init_value(c3c, startcost, nullptr, aargs, 0);
+    }
+
+
+
+    // Finally, we destroy our C3Control data
+    c3control_destroy(c3c);
 
     // Plot the data using gnuplot ------------------------------------------------------ //
+    // The following command just requests to run a shell script with the commands in the file ../viewplots.gla
     system("cd .. && ./viewplots.gla");
 
     // Finished with no errors ---------------------------------------------------------- //
