@@ -1,3 +1,6 @@
 # CLion Project Files
 .idea
 cmake-build-debug
+
+# Build files
+build
