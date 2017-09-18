@@ -77,7 +77,7 @@ void MarkovChainApproximation::computeMarkovApproximation(const std::function<do
     unsigned int iterations = 0;
 
     std::setprecision(4); // For showing relative error approximate to 4 decimals
-
+    cout << "==== Starting Markov Chain Approximation technique ====" << endl;
     do
     {
         oldV_->swap(*newV_);

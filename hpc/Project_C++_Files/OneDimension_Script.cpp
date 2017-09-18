@@ -10,15 +10,17 @@
 #include <iostream>
 #include <functional>
 #include <fstream>
+#include <cassert>
 
 #include "Functions.h"
 #include "MarkovChainApproximation.h"
 #include "EulerMethod.h"
 extern "C"
 {
-#include "c3/c3.h"
+//#include "c3/c3.h" // Already included in the c3sc file
 #include "c3sc/c3sc.h"
 #include "c3sc/bellman.h"
+#include "c3sc/valuefunc.h"
 }
 
 using namespace std;
@@ -153,28 +155,70 @@ int main()
     // Now with those parameters we "set the scene"
     struct C3Control* c3c = c3control_create(dx, du, dw, lb, ub, Narr, beta);
 
-    // We have created the C3Control scene, but now we need to add a diffusion equation (our ODE) to it
-    c3control_add_diff(c3c, s1, nullptr);
-    // No drift in this particular example but can add it in the same way as with adding diffusion, except by calling
-    // the method: c3control_add_drift
+    // We have created the C3Control scene, but now we need to add a diffusion equation (our ODE) to it. In this 1-d
+    // example there is no diffusion so it's pointless to add it
+//    c3control_add_diff(c3c, diff, nullptr);
+
+    // We also have to add drift now in the same way
+    c3control_add_drift(c3c, drift, nullptr);
 
     // Now add the cost function to the scene. Other costs can be added, such as boundary costs and obstacle costs.
     c3control_add_stagecost(c3c, stagecost);
 
+    // Add the cost function and boundary function
+    c3control_add_stagecost(c3c,stagecost);
+    c3control_add_boundcost(c3c,boundcost);
 
     // ???
     char filename[256];
-    sprintf(filename, "%s/%s.c3", dirout,"cost");
+    sprintf(filename, "%s.c3", "cost");
     double ** xgrid = c3control_get_xgrid(c3c);
     struct ValueF * cost = valuef_load(filename, Narr, xgrid);
+    struct ApproxArgs * aargs = approx_args_init();
     if (cost == nullptr){
         cost = c3control_init_value(c3c, startcost, nullptr, aargs, 0);
     }
 
+    size_t maxiter_vi = 10;
+    double abs_conv_vi = 1e-3;
+    size_t maxiter_pi = 10;
+    double abs_conv_pi = 1e-2;
+    struct Diag * diag = NULL;
+    char filename_diag[256];
+    struct c3Opt * opt = c3opt_alloc(BRUTEFORCE,du);
+    int verbose = 0;
+    sprintf(filename_diag,"n%zu_%s", N,"diagnostic.dat");
 
+    cout << "==== Starting C3 Iteration technique ====" << endl;
+    for (size_t ii = 0; ii < maxiter_vi; ii++){
+        /* for (size_t ii = 0; ii < 0; ii++){ */
+        struct ValueF * next = c3control_pi_solve(c3c,maxiter_pi,abs_conv_pi,
+                                                  cost,aargs,opt,verbose,&diag);
+
+        valuef_destroy(cost); cost = NULL;
+        cost = c3control_vi_solve(c3c,1,abs_conv_vi,next,aargs,opt,verbose,&diag);
+        valuef_destroy(next); next = NULL;
+
+        sprintf(filename, "%s.c3", "cost");
+        int saved = valuef_save(cost,filename);
+        assert (saved == 0);
+
+        if (verbose != 0){
+            printf("ii=%zu ranks=",ii);
+            size_t * ranks = valuef_get_ranks(cost);
+            iprint_sz(4,ranks);
+        }
+
+        saved = diag_save(diag,filename_diag);
+        assert (saved == 0);
+    }
 
     // Finally, we destroy our C3Control data
-    c3control_destroy(c3c);
+    valuef_destroy(cost); cost = NULL;
+    c3control_destroy(c3c); c3c = NULL;
+    diag_destroy(&diag); diag = NULL;
+    c3opt_free(opt); opt = NULL;
+    approx_args_free(aargs); aargs = NULL;
 
     // Plot the data using gnuplot ------------------------------------------------------ //
     // The following command just requests to run a shell script with the commands in the file ../viewplots.gla

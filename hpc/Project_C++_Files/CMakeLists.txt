@@ -23,7 +23,7 @@ set(SOURCE_FILES
 #link_directories(${MATLAB_DIR}/bin/glnxa64)
 
 # Include all header files of the C3 lib
-set(C3_DIR ../c3)
+set(C3_DIR ../../c3)
 set(C3_DIR_SRC ${C3_DIR}/src)
 include_directories(${C3_DIR_SRC}/lib_array)
 include_directories(${C3_DIR_SRC}/lib_clinalg)
@@ -44,9 +44,16 @@ include_directories(${C3_DIR}/include)
 link_directories(${C3_DIR}/lib)
 
 # Include all header files of the C3SC lib
-set(C3SC_DIR ../c3sc)
+set(C3SC_DIR ../../c3sc)
 include_directories(${C3SC_DIR}/src)
+# Include library for c3sc
 link_directories(${C3SC_DIR}/lib)
+
+# Include all header files of the CDYN lib
+set(CDYN_DIR ../../cdyn)
+include_directories(${CDYN_DIR}/src)
+# Include library for cdyn
+link_directories(${CDYN_DIR}/lib)
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${C_SOURCE_FILES})
 
