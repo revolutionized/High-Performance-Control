@@ -157,7 +157,7 @@ int main()
 
     // We have created the C3Control scene, but now we need to add a diffusion equation (our ODE) to it. In this 1-d
     // example there is no diffusion so it's pointless to add it
-//    c3control_add_diff(c3c, diff, nullptr);
+    c3control_add_diff(c3c, diff, nullptr);
 
     // We also have to add drift now in the same way
     c3control_add_drift(c3c, drift, nullptr);
@@ -222,7 +222,7 @@ int main()
 
     // Plot the data using gnuplot ------------------------------------------------------ //
     // The following command just requests to run a shell script with the commands in the file ../viewplots.gla
-    system("cd .. && ./viewplots.gla");
+//    system("cd .. && ./viewplots.gla");
 
     // Finished with no errors ---------------------------------------------------------- //
     cout << " ~~~ Finished executing ~~~ ";
