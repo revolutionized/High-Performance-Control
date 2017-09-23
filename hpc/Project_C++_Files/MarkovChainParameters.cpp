@@ -7,6 +7,8 @@
 #include <typeinfo>
 #include <cmath>
 
+// CONSTRUCTORS + DESTRUCTOR ------------------------------------ CONSTRUCTORS + DESTRUCTOR //
+
 MarkovChainParameters::MarkovChainParameters(double* gridLeftBound,
                                              double* gridRightBound,
                                              unsigned int* gridLength,
@@ -34,6 +36,7 @@ MarkovChainParameters::MarkovChainParameters(double* gridLeftBound,
         gridLeftBound_[ii] = gridLeftBound[ii];
         gridLength_[ii] = gridLength[ii];
     }
+    numOfAlphas_ = numOfGridDimensions;
 
     // Set up alpha discretisation  and assign memory for own copies of lower bound and lengths
     unsigned int numOfAlphaDimensions = 0;
@@ -50,6 +53,7 @@ MarkovChainParameters::MarkovChainParameters(double* gridLeftBound,
         alphaLeftBound_[ii] = alphaLeftBound[ii];
         alphaLength_[ii] = alphaLength[ii];
     }
+    numOfAlphas_ = numOfAlphaDimensions;
 }
 
 MarkovChainParameters::MarkovChainParameters(double* gridLeftBound,
@@ -95,6 +99,10 @@ MarkovChainParameters::MarkovChainParameters(double* gridLeftBound,
         alphaLeftBound_[ii] = alphaLeftBound[ii];
         alphaLength_[ii] = static_cast<unsigned int>(floor((alphaRightBound[ii] - alphaLeftBound[ii])/deltaAlpha[ii]));
     }
+
+    // Set relative error to test against and max iterations
+    epsErr_ = pow(10.0, -3.0);
+    maxIterations_ = 100;
 }
 
 MarkovChainParameters::~MarkovChainParameters()
@@ -106,6 +114,50 @@ MarkovChainParameters::~MarkovChainParameters()
     delete alphaLength_;
     delete deltaAlpha_;
 }
+
+
+// GETTERS ------------------------------------------------------------------------ GETTERS //
+
+double MarkovChainParameters::getGridAtIndex(unsigned int index, unsigned int gridNum)
+{
+    assert(gridNum < numOfGrids_ && index < gridLength_[gridNum]);
+
+    double gridPosition = gridLeftBound_[gridNum] + index * deltaGrid_[gridNum];
+    return gridPosition;
+}
+
+double MarkovChainParameters::getAlphaAtIndex(unsigned int index, unsigned int alphaNum)
+{
+    assert(alphaNum < numOfAlphas_ && index < alphaLength_[alphaNum]);
+
+    double alphaPosition = alphaLeftBound_[alphaNum] + index * deltaAlpha_[alphaNum];
+    return alphaPosition;
+}
+
+unsigned int MarkovChainParameters::getNumOfGrids()
+{
+    return numOfGrids_;
+}
+
+unsigned int MarkovChainParameters::getNumOfAlphas()
+{
+    return numOfAlphas_;
+}
+
+unsigned int MarkovChainParameters::getGridLength(unsigned int gridNum)
+{
+    assert(gridNum < numOfGrids_);
+    return gridLength_[gridNum];
+}
+
+unsigned int MarkovChainParameters::getAlphaLength(unsigned int alphaNum)
+{
+    assert(alphaNum < numOfAlphas_);
+    return alphaLength_[alphaNum];
+}
+
+
+// PRIVATE METHODS -------------------------------------------------------- PRIVATE METHODS //
 
 void MarkovChainParameters::assertParameters(double* gridLeftBound,
                                              double* gridRightBound,
@@ -266,4 +318,6 @@ void MarkovChainParameters::assertParameters(double* gridLeftBound,
         assert(deltaAlpha[counter] > 0);
     };
 }
+
+
 

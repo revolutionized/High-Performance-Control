@@ -59,12 +59,34 @@ struct MarkovChainParameters
     ~MarkovChainParameters();
 
     // GETTERS ------------------------------------------------------------------------------------------------- GETTERS
+    /// \brief Returns value of grid array at particular index
+    ///
+    /// Technically there is no array for the grid. Instead of storing the grid as another large array and obvious (in
+    /// the sense that it's one increment after the other), this function just calculates and returns the grid at the
+    /// specified index.
+    /// \param index The index along the grid array. Must be >= 0 and less than the total length of the grid array.
+    double getGridAtIndex(unsigned int index, unsigned int gridNum);
 
+    /// \brief Returns value of alpha array at particular index.
+    ///
+    /// Technically there is no array for alpha. Instead of storing the alpha as another large array and obvious (in
+    /// the sense that it's one increment after the other), this function just calculates and returns the alpha value at
+    /// the specified index.
+    /// \param index The index along the alpha array. Must be >= 0 and less than the total length of the alpha array.
+    double getAlphaAtIndex(unsigned int index, unsigned int alphaNum);
 
+    unsigned int getNumOfGrids();
+
+    unsigned int getNumOfAlphas();
+    
+    unsigned int getGridLength(unsigned int gridNum);
+    
+    unsigned int getAlphaLength(unsigned int alphaNum);
+    
 private:
     // METHODS ------------------------------------------------------------------------------------------------- METHODS
 
-    /// Asserts pro
+    /// Asserts appropriate parameters
     void assertParameters(double* gridLeftBound,
                           double* gridRightBound,
                           double* deltaGrid,
@@ -72,6 +94,7 @@ private:
                           double* alphaRightBound,
                           double* deltaAlpha);
 
+    /// Asserts appropriate parameters
     void assertParameters(double* gridLeftBound,
                           double* gridRightBound,
                           unsigned int* gridLength,
@@ -86,6 +109,9 @@ private:
     unsigned int* alphaLength_;
 
     unsigned int* gridLength_;
+
+    unsigned int numOfGrids_;
+    unsigned int numOfAlphas_;
 
     /// \brief Lower bound of the grid array.
     ///

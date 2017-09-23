@@ -145,6 +145,10 @@ private:
     /// \brief Searches and finds the index of the grid array that most closely matches with the value of x given
     /// \param x Can be anything, but for proper use should be between the lower and upper bounds of the grid
     unsigned int getGridIndexClosestTo(double x);
+
+
+    // FIELDS --------------------------------------------------------------------------------------------------- FIELDS
+
     /// Length of the alpha array (could also use sizeof, but this is for convenience)
     unsigned int alphaLength_;
     /// \brief Lower bound of the grid array. 

@@ -6,25 +6,29 @@
 
 #include <functional>
 #include <vector>
+#include <fstream>
 #include "MarkovChainParameters.h"
 
 class MarkovChainApproximation2
 {
 public:
-
+    // METHODS ------------------------------------------------------------------------------------------------- METHODS
     explicit MarkovChainApproximation2(MarkovChainParameters& mcp,
-                                       double* initGuess);
+                                       double* initGuess,
+                                       double* initAlphaGuess,
+                                       unsigned int precision);
 
     /// \brief Deallocates all memory that this class needed
     ~MarkovChainApproximation2();
 
     /// \brief Main function to call when ready to compute the function approximation using the MCA method.
-    /// \param costFunction The cost function is given as a std::function and takes two doubles (x, alpha) and returns
-    /// the value as a double.
-    /// \param sigmaFunction The sigma function is often called the ?advection term?. For this one-dimensional case it
-    /// represents the noise / stochastic disturbance being introduced to the scenario.
-    void computeMarkovApproximation(const std::function<double(double, double)>& costFunction,
-                                    const std::function<double(double)>& sigmaFunction);
+    /// \param costFunction The cost function is given as a std::function and takes two double arrays (x, alpha) and
+    /// returns the value as a double.
+    /// \param sigmaFunction The sigma function is often called the diffusion term and often represents represents the
+    /// noise / stochastic disturbance being introduced to the system. It is given as a std::function and takes a double
+    /// array representing the diffusion applied to each subsystem
+    void computeMarkovApproximation(const std::function<double(double*, double*)>& costFunction,
+                                    const std::function<double(double*)>& sigmaFunction);
 
     /// \brief Finds the most optimal control value at a specific location along arbitrary one-dimensional grid.
     ///
@@ -37,25 +41,9 @@ public:
     double getMarkovControlFunction(double x);
 
 private:
-    // METHODS:
+    // METHODS ------------------------------------------------------------------------------------------------- METHODS
 
 
-
-    /// \brief Returns value of grid array at particular index
-    ///
-    /// Technically there is no array for the grid. Instead of storing the grid as another large array and obvious (in
-    /// the sense that it's one increment after the other), this function just calculates and returns the grid at the
-    /// specified index.
-    /// \param index The index along the grid array. Must be >= 0 and less than the total length of the grid array.
-    double getGridAtIndex(unsigned int index);
-
-    /// \brief Returns value of alpha array at particular index.
-    ///
-    /// Technically there is no array for alpha. Instead of storing the alpha as another large array and obvious (in
-    /// the sense that it's one increment after the other), this function just calculates and returns the alpha value at
-    /// the specified index.
-    /// \param index The index along the alpha array. Must be >= 0 and less than the total length of the alpha array.
-    double getAlphaAtIndex(unsigned int index);
 
     /// \brief B function with no control dependency
     /// See "Numerical Methods for Stochastic Control Problems in Continuous Time" (H. J. Kushner) pg. 99 where it gives
@@ -94,7 +82,7 @@ private:
                                           double den,
                                           const std::function<double(double)>& sigmaFunction);
 
-    /// \brief Loops through each alpha and caluclates dyn prog eqn summation for that particular alpha.
+    /// \brief Loops through each alpha and calculates dynamic programming equation summation for that particular alpha.
     /// \param v_probabilities This is the possible transition states that can be taken on (so its of length 3 for the
     /// one-dimensional case). We pass this in as a parameter instead of constructing it in the function to avoid the
     /// time needed to allocate and deallocate memory for this vector (instead it is already allocated prior and we just
@@ -129,14 +117,18 @@ private:
     /// \param x Can be anything, but for proper use should be between the lower and upper bounds of the grid
     unsigned int getGridIndexClosestTo(double x);
 
-    // FIELDS:
 
+    // FIELDS --------------------------------------------------------------------------------------------------- FIELDS
+
+    std::fstream oldVFile_;
+    std::fstream newVFile_;
+    std::fstream minAlphaFile_;
 
     /// The last iterations values of the dynamic programming equation at each grid index
     std::vector<double>* oldV_;
     /// The current iterations values of the dynamic programming equation at each grid index
     std::vector<double>* newV_;
-    /// The values for the optimal alpha (or control paramater) for each index along the grid is stored in this vector
+    /// The values for the optimal alpha (or control parameter) for each index along the grid is stored in this vector
     std::vector<double>* minAlpha_;
     /// \brief Smallest relative error before markov approximation exits.
     ///

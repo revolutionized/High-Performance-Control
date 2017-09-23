@@ -5,43 +5,82 @@
 #include "MarkovChainApproximation2.h"
 #include "Functions2.h"
 #include <cassert>
+#include <algorithm>
 #include <cmath>
+#include <cfloat>
 #include <iostream>
 #include <iomanip>
 
-//extern "C" {
-//// Get c3 library which is in C-code not C++
-//#include "c3.h"
-//}
+#ifdef _WIN32
+// New line for Windows
+#define NEWL "\r\n"
+#else
+// New line for Unix
+#define NEWL "\n"
+#endif
 
-using namespace std;
+using std::cout;
 
-MarkovChainApproximation2::MarkovChainApproximation2()
+MarkovChainApproximation2::MarkovChainApproximation2(MarkovChainParameters& mcp,
+                                                     double* initGridGuess,
+                                                     double* initAlphaGuess,
+                                                     unsigned int precision)
         :
 {
+    // Instead of using vectors, we write to a fstreams (files), since there may not be enough space on the memory
+    oldVFile_.open(".tmpMCA~1");
+    newVFile_.open(".tmpMCA~2");
+    minAlphaFile_.open(".tmpMCA~3");
+    // Assert that all files were correctly opened
+    assert(oldVFile_.is_open() && newVFile_.is_open() && minAlphaFile_.is_open());
 
-
-
-    // Set allocation sizes for new vectors
-    oldV_ = new std::vector<double>(gridLength);
-    newV_ = new std::vector<double>(gridLength);
-    minAlpha_ = new std::vector<double>(gridLength);
-
-    // Apply initial guess
-    for (int i = 0; i < gridLength; ++i)
+    // Apply initial guess' for dynamic programming equations, and use same values for minimum alpha values
+    for (int ii = 0; ii < mcp.getNumOfGrids(); ++ii)
     {
-        (*newV_)[i] = initGuess;
-        (*minAlpha_)[i] = initGuess;
+        // Start back at top and create new column
+        newVFile_.seekg(0);
+
+        for (int jj = 0; jj < mcp.getGridLength(ii); ++jj)
+        {
+            std::string line;
+            // Remove the end newline component
+            getline(newVFile_, line);
+            line.erase(std::remove(line.begin(), line.end(), NEWL), line.end());
+            // Add on to the end of the line the next guess for that grid dynamic equation
+            line += " " + std::to_string(initGridGuess[ii]);
+            newVFile_ << line << NEWL;
+        }
     }
-    *oldV_ = *newV_; // Copy the vectors
+    for (int ii = 0; ii < mcp.getNumOfAlphas(); ++ii)
+    {
+        // Start back at top and create new column
+        minAlphaFile_.seekg(0);
 
-    // Cause BC's aren't really considered, just say the minimum alpha boundaries are zero
-    (*minAlpha_)[0] = 0;
-    (*minAlpha_)[minAlpha_->size() - 1] = 0;
+        // Cause BC's aren't really considered, just say the minimum alpha boundaries are zero
+        std::string line;
+        // Remove the end newline component
+        getline(minAlphaFile_, line);
+        line.erase(std::remove(line.begin(), line.end(), NEWL), line.end());
+        line += " " + std::to_string(0.0);
+        minAlphaFile_ << line;
 
-    // Set relative error to test against and max iterations
-    epsErr_ = pow(10.0, -3.0);
-    maxIterations_ = 100;
+        for (int jj = 1; jj < mcp.getAlphaLength(ii) - 1; ++jj)
+        {
+            std::string line;
+            // Remove the end newline component
+            getline(minAlphaFile_, line);
+            line.erase(std::remove(line.begin(), line.end(), NEWL), line.end());
+            // Add on to the end of the line the next init guess
+            line += " " + std::to_string(initAlphaGuess[ii]);
+            newVFile_ << line << NEWL;
+        }
+
+        // end boundary same as before
+        getline(minAlphaFile_, line);
+        line.erase(std::remove(line.begin(), line.end(), NEWL), line.end());
+        line += " " + std::to_string(0.0);
+        minAlphaFile_ << line;
+    }
 }
 
 MarkovChainApproximation2::~MarkovChainApproximation2()
@@ -49,8 +88,14 @@ MarkovChainApproximation2::~MarkovChainApproximation2()
     delete oldV_;
     delete newV_;
     delete minAlpha_;
-    delete deltaGrid_;
-    delete deltaAlpha_;
+
+    // Close and remove files used for dynamic programming equations
+    oldVFile_.close();
+    std::remove(".tmpMCA~1");
+    newVFile_.close();
+    std::remove(".tmpMCA~2");
+    minAlphaFile_.close();
+    std::remove(".tmpMCA~3");
 }
 
 void MarkovChainApproximation2::computeMarkovApproximation(const std::function<double(double, double)>& costFunction,
@@ -97,21 +142,6 @@ double MarkovChainApproximation2::B_func(double x, double alpha)
 }
 
 
-double MarkovChainApproximation2::getGridAtIndex(unsigned int index)
-{
-//    assert(index < newV_.size());
-
-    double gridPosition = gridLeftBound_ + index * deltaGrid_;
-    return gridPosition;
-}
-
-double MarkovChainApproximation2::getAlphaAtIndex(unsigned int index)
-{
-    assert(index < alphaLength_);
-
-    double alphaPosition = alphaLeftBound_ + index * deltaAlpha_;
-    return alphaPosition;
-}
 
 double MarkovChainApproximation2::transitionProb(double x,
                                                 double y,
