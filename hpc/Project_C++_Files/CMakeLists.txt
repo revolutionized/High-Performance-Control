@@ -13,7 +13,11 @@ set(SOURCE_FILES
 #        DotMatCreator.h
         Functions.h
         Functions.cpp 
-        OneDimension_Script.cpp)
+        OneDimension_Script.cpp
+        MarkovChainApproximation2.cpp
+        MarkovChainApproximation2.h
+        Functions2.h
+        Functions2.cpp MarkovChainParameters.h MarkovChainParameters.cpp)
 
 # Include header files for MATLAB (to create .mat files)
 #set(MATLAB_DIR /usr/local/MATLAB/R2017a)
