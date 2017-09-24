@@ -20,6 +20,8 @@
 #endif
 
 using std::cout;
+using std::string;
+using std::fstream;
 
 MarkovChainApproximation2::MarkovChainApproximation2(MarkovChainParameters& mcp,
                                                      double* initGridGuess,
@@ -27,13 +29,62 @@ MarkovChainApproximation2::MarkovChainApproximation2(MarkovChainParameters& mcp,
                                                      unsigned int precision)
         :
 {
-    // Instead of using vectors, we write to a fstreams (files), since there may not be enough space on the memory
-    oldVFile_.open(".tmpMCA~1");
-    newVFile_.open(".tmpMCA~2");
-    minAlphaFile_.open(".tmpMCA~3");
-    // Assert that all files were correctly opened
-    assert(oldVFile_.is_open() && newVFile_.is_open() && minAlphaFile_.is_open());
+    // Set precision of std::out
+    std::setprecision(precision);
 
+    // Instead of using in-RAM arrays, we write to a fstreams (files), since there may not be enough space on the memory
+    for (int ii = 0; ii < mcp.getNumOfGrids(); ++ii)
+    {
+        file aNewFile;
+        aNewFile.stream = new fstream;
+        // Set precision
+        aNewFile.stream->precision(precision);
+        // Set filename
+        aNewFile.filename = ".tmpMCA_Old~" + std::to_string(ii);
+        aNewFile.stream->open(aNewFile.filename);
+        // Apply initial guess
+        for (int jj = 0; jj < mcp.getGridLength(ii); ++jj)
+        {
+            (*aNewFile.stream) << std::to_string(initGridGuess[ii]) << NEWL;
+        }
+        oldVFile_.push_back(aNewFile);
+
+
+        file anotherNewFile;
+        anotherNewFile.stream = new fstream;
+        // Set precision
+        anotherNewFile.stream->precision(precision);
+        // Set filename
+        anotherNewFile.filename = ".tmpMCA_New~" + std::to_string(ii);
+        anotherNewFile.stream->open(anotherNewFile.filename);
+        // Apply initial guess
+        for (int jj = 0; jj < mcp.getGridLength(ii); ++jj)
+        {
+            (*anotherNewFile.stream) << std::to_string(initGridGuess[ii]) << NEWL;
+        }
+        newVFile_.push_back(anotherNewFile);
+    }
+    for (int ii = 0; ii < mcp.getNumOfAlphas(); ++ii)
+    {
+        file aNewFile;
+        aNewFile.stream = new fstream;
+        // Set precision
+        aNewFile.stream->precision(precision);
+        // Set filename
+        aNewFile.filename = ".tmpMCA_alpha~" + std::to_string(ii);
+        aNewFile.stream->open(aNewFile.filename);
+        // Apply initial guess
+        for (int jj = 0; jj < mcp.getAlphaLength(ii); ++jj)
+        {
+            (*aNewFile.stream) << std::to_string(initAlphaGuess[ii]) << NEWL;
+        }
+        minAlphaFile_.push_back(aNewFile);
+    }
+
+    // Assert that all files were correctly opened
+    assert(allStreamsOpen());
+
+    /*
     // Apply initial guess' for dynamic programming equations, and use same values for minimum alpha values
     for (int ii = 0; ii < mcp.getNumOfGrids(); ++ii)
     {
@@ -81,6 +132,7 @@ MarkovChainApproximation2::MarkovChainApproximation2(MarkovChainParameters& mcp,
         line += " " + std::to_string(0.0);
         minAlphaFile_ << line;
     }
+    */
 }
 
 MarkovChainApproximation2::~MarkovChainApproximation2()
@@ -90,12 +142,21 @@ MarkovChainApproximation2::~MarkovChainApproximation2()
     delete minAlpha_;
 
     // Close and remove files used for dynamic programming equations
-    oldVFile_.close();
-    std::remove(".tmpMCA~1");
-    newVFile_.close();
-    std::remove(".tmpMCA~2");
-    minAlphaFile_.close();
-    std::remove(".tmpMCA~3");
+    for (int ii = 0; ii < oldVFile_.size(); ++ii)
+    {
+        oldVFile_[ii].deallocate();
+        delete oldVFile_[ii];
+    }
+    for (int ii = 0; ii < newVFile_.size(); ++ii)
+    {
+        newVFile_[ii].deallocate();
+        delete newVFile_[ii];
+    }
+    for (int ii = 0; ii < minAlphaFile_.size(); ++ii)
+    {
+        minAlphaFile_[ii].deallocate();
+        delete minAlphaFile_[ii];
+    }
 }
 
 void MarkovChainApproximation2::computeMarkovApproximation(const std::function<double(double, double)>& costFunction,
@@ -300,5 +361,31 @@ unsigned int MarkovChainApproximation2::getGridIndexClosestTo(double x)
     }
 
     return closestGridIndex;
+}
+
+bool MarkovChainApproximation2::allStreamsOpen()
+{
+    for (auto&& oldVFile : oldVFile_)
+    {
+        if (!oldVFile.stream->is_open())
+        {
+            return false;
+        }
+    }
+    for (auto&& newVFile : newVFile_)
+    {
+        if (!newVFile.stream->is_open())
+        {
+            return false;
+        }
+    }
+    for (auto&& minAlphaFile : minAlphaFile_)
+    {
+        if (!minAlphaFile.stream->is_open())
+        {
+            return false;
+        }
+    }
+    return true;
 }
 

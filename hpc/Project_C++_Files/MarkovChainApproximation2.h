@@ -117,19 +117,34 @@ private:
     /// \param x Can be anything, but for proper use should be between the lower and upper bounds of the grid
     unsigned int getGridIndexClosestTo(double x);
 
+    bool allStreamsOpen();
 
     // FIELDS --------------------------------------------------------------------------------------------------- FIELDS
 
-    std::fstream oldVFile_;
-    std::fstream newVFile_;
-    std::fstream minAlphaFile_;
+    struct file
+    {
+        std::fstream* stream = nullptr;
+        std::string filename;
+        void deallocate()
+        {
+            if (stream != nullptr)
+            {
+                stream->close();
+                delete stream;
+                std::remove(filename.c_str());
+            }
+        }
+    };
+    std::vector<file> oldVFile_;
+    std::vector<file> newVFile_;
+    std::vector<file> minAlphaFile_;
 
     /// The last iterations values of the dynamic programming equation at each grid index
-    std::vector<double>* oldV_;
+    std::vector<double>* oldV_ = nullptr;
     /// The current iterations values of the dynamic programming equation at each grid index
-    std::vector<double>* newV_;
+    std::vector<double>* newV_ = nullptr;
     /// The values for the optimal alpha (or control parameter) for each index along the grid is stored in this vector
-    std::vector<double>* minAlpha_;
+    std::vector<double>* minAlpha_ = nullptr;
     /// \brief Smallest relative error before markov approximation exits.
     ///
     /// The markov chain continues to repeat until its relative error (norm_inf |oldV - newV|) is less than this value.
