@@ -25,12 +25,12 @@ struct MarkovChainParameters
     /// \param h This is the level of detail that the Markov Approximation considers (for convergence we want h <
     /// grid spacing (delta x)
     /// \param initGuess The initial guess for the value of the function we are approximating (at x = 0)
-    MarkovChainParameters(double* gridLeftBound,
-                          double* gridRightBound,
+    MarkovChainParameters(const double* gridLeftBound,
+                          const double* gridRightBound,
                           unsigned int* gridLength,
-                          double* alphaLeftBound,
-                          double* alphaRightBound,
-                          unsigned int* alphaLength,
+                          double alphaLeftBound,
+                          double alphaRightBound,
+                          unsigned int alphaLength,
                           double h);
 
     /// \brief The class must be started with all the appropriate bounds.
@@ -48,17 +48,24 @@ struct MarkovChainParameters
     /// \param h This is the level of detail that the Markov Approximation considers (for convergence we want h <
     /// grid spacing (delta x)
     /// \param initGuess The initial guess for the value of the function we are approximating (at x = 0)
-    MarkovChainParameters(double* gridLeftBound,
-                          double* gridRightBound,
-                          double* deltaGrid,
-                          double* alphaLeftBound,
-                          double* alphaRightBound,
-                          double* deltaAlpha,
+    MarkovChainParameters(const double* gridLeftBound,
+                          const double* gridRightBound,
+                          const double* deltaGrid,
+                          double alphaLeftBound,
+                          double alphaRightBound,
+                          double deltaAlpha,
                           double h);
 
     ~MarkovChainParameters();
 
+    // SETTERS ------------------------------------------------------------------------------------------------- SETTERS
+
+    void setMaxIterations(unsigned int maxIters);
+
+    void setRelativeError(double epsErr);
+
     // GETTERS ------------------------------------------------------------------------------------------------- GETTERS
+
     /// \brief Returns value of grid array at particular index
     ///
     /// Technically there is no array for the grid. Instead of storing the grid as another large array and obvious (in
@@ -67,51 +74,58 @@ struct MarkovChainParameters
     /// \param index The index along the grid array. Must be >= 0 and less than the total length of the grid array.
     double getGridAtIndex(unsigned int index, unsigned int gridNum);
 
+    double* getGridAtIndex(unsigned int* index);
+
     /// \brief Returns value of alpha array at particular index.
     ///
     /// Technically there is no array for alpha. Instead of storing the alpha as another large array and obvious (in
     /// the sense that it's one increment after the other), this function just calculates and returns the alpha value at
     /// the specified index.
     /// \param index The index along the alpha array. Must be >= 0 and less than the total length of the alpha array.
-    double getAlphaAtIndex(unsigned int index, unsigned int alphaNum);
+    double getAlphaAtIndex(unsigned int index);
 
     unsigned int getNumOfGrids();
 
-    unsigned int getNumOfAlphas();
-    
     unsigned int getGridLength(unsigned int gridNum);
-    
-    unsigned int getAlphaLength(unsigned int alphaNum);
-    
+
+    unsigned int getAlphaLength();
+
+    double getDeltaGrid(unsigned int gridNum);
+
+    unsigned int getMaxIterations();
+
+    double getRelativeError();
+
+    double getH();
+
 private:
     // METHODS ------------------------------------------------------------------------------------------------- METHODS
 
     /// Asserts appropriate parameters
-    void assertParameters(double* gridLeftBound,
-                          double* gridRightBound,
-                          double* deltaGrid,
-                          double* alphaLeftBound,
-                          double* alphaRightBound,
-                          double* deltaAlpha);
+    void assertParameters(const double* gridLeftBound,
+                          const double* gridRightBound,
+                          const double* deltaGrid,
+                          double alphaLeftBound,
+                          double alphaRightBound,
+                          double deltaAlpha);
 
     /// Asserts appropriate parameters
-    void assertParameters(double* gridLeftBound,
-                          double* gridRightBound,
+    void assertParameters(const double* gridLeftBound,
+                          const double* gridRightBound,
                           unsigned int* gridLength,
-                          double* alphaLeftBound,
-                          double* alphaRightBound,
-                          unsigned int* alphaLength);
+                          double alphaLeftBound,
+                          double alphaRightBound,
+                          unsigned int alphaLength);
 
 
     // FIELDS --------------------------------------------------------------------------------------------------- FIELDS
 
     /// Length of the alpha array (could also use sizeof, but this is for convenience)
-    unsigned int* alphaLength_;
+    unsigned int alphaLength_;
 
     unsigned int* gridLength_;
 
     unsigned int numOfGrids_;
-    unsigned int numOfAlphas_;
 
     /// \brief Lower bound of the grid array.
     ///
@@ -122,13 +136,23 @@ private:
     ///
     /// Calculating alpha points starts from the lower bound and works it way up (so no
     /// need to store the upper bound)
-    double* alphaLeftBound_;
+    double alphaLeftBound_;
     /// Size of steps between grid array values
     double* deltaGrid_;
     /// Size of steps between alpha array values
-    double* deltaAlpha_;
+    double deltaAlpha_;
     /// Scalar approximation parameter that determines
     double h_;
+    /// \brief Smallest relative error before markov approximation exits.
+    ///
+    /// The markov chain continues to repeat until its relative error (norm_inf |oldV - newV|) is less than this value.
+    /// The smaller this value, the higher the precision, but the greater number of iterations it will take.
+    double epsErr_ = 0.001;
+    /// \brief Total number of iterations before markov approximation exits.
+    ///
+    /// If the max number of iterations has been reached and the relative error still isn't less than epsErr_, then the
+    /// markov approximation method will finish
+    unsigned int maxIterations_ = 100;
 };
 
 

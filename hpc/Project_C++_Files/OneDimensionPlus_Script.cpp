@@ -1,8 +1,8 @@
-/* Script example and test case for 1D problem.
+/* Script example and test case for 1D+ problem
  * Written by: David Dos Santos (student id - 7521626)
  *
- * This script is given as an example on how to access the Markov Chain Approximation library (the 1d version), and how
- * to access the continuous decomposition library. This script also shows how we can compare the two files.
+ * This script is given as an example on how to access the Markov Chain Approximation library (the n-dimensional
+ * version). It also shows how to access the Euler library for n-dimensional problems.
  */
 
 #include <cmath>

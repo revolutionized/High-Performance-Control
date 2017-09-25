@@ -14,10 +14,10 @@ set(SOURCE_FILES
         Functions.h
         Functions.cpp 
         OneDimension_Script.cpp
-        MarkovChainApproximation2.cpp
-        MarkovChainApproximation2.h
+        MarkovChainApproximationX.cpp
+        MarkovChainApproximationX.h
         Functions2.h
-        Functions2.cpp MarkovChainParameters.h MarkovChainParameters.cpp)
+        Functions2.cpp MarkovChainParameters.h MarkovChainParameters.cpp OneDimensionPlus_Script.cpp)
 
 # Include header files for MATLAB (to create .mat files)
 #set(MATLAB_DIR /usr/local/MATLAB/R2017a)
