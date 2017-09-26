@@ -5,19 +5,19 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 11)
 
 set(SOURCE_FILES
-        EulerMethod.cpp
-        EulerMethod.h
-        MarkovChainApproximation.cpp
-        MarkovChainApproximation.h
+        EulersMethod1D.cpp
+        EulersMethod1D.h
+        MarkovChainApproximation1D.cpp
+        MarkovChainApproximation1D.h
 #        DotMatCreator.cpp
 #        DotMatCreator.h
         Functions.h
         Functions.cpp 
         OneDimension_Script.cpp
-        MarkovChainApproximationX.cpp
-        MarkovChainApproximationX.h
+        MarkovChainApproximation.cpp
+        MarkovChainApproximation.h
         Functions2.h
-        Functions2.cpp MarkovChainParameters.h MarkovChainParameters.cpp OneDimensionPlus_Script.cpp)
+        Functions2.cpp MarkovChainParameters.h MarkovChainParameters.cpp OneDimensionPlus_Script.cpp EulersMethod.cpp EulersMethod.h EulerParameters.cpp EulerParameters.h)
 
 # Include header files for MATLAB (to create .mat files)
 #set(MATLAB_DIR /usr/local/MATLAB/R2017a)

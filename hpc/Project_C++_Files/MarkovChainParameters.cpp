@@ -15,10 +15,12 @@ MarkovChainParameters::MarkovChainParameters(const double* gridLeftBound,
                                              double alphaLeftBound,
                                              double alphaRightBound,
                                              unsigned int alphaLength,
-                                             double h)
+                                             double h,
+                                             unsigned int dimensions)
     : h_(h),
       alphaLeftBound_(alphaLeftBound),
-      alphaLength_(alphaLength)
+      alphaLength_(alphaLength),
+      numOfGrids_(dimensions)
 {
     // Assert appropriate parameters have been provided
     assertParameters(gridLeftBound, gridRightBound, gridLength, alphaLeftBound, alphaRightBound, alphaLength);
@@ -49,24 +51,20 @@ MarkovChainParameters::MarkovChainParameters(const double* gridLeftBound,
                                              double alphaLeftBound,
                                              double alphaRightBound,
                                              double deltaAlpha,
-                                             double h)
+                                             double h,
+                                             unsigned int dimensions)
     : h_(h),
       alphaLeftBound_(alphaLeftBound),
-      deltaAlpha_(deltaAlpha)
+      deltaAlpha_(deltaAlpha),
+      numOfGrids_(dimensions)
 {
     // Assert appropriate parameters have been provided
     assertParameters(gridLeftBound, gridRightBound, deltaGrid, alphaLeftBound, alphaRightBound, deltaAlpha);
 
-    // Set up grid spacing and assign memory for own copies of lower bound and lengths
-    unsigned int numOfGridDimensions = 0;
-    while (gridLeftBound[numOfGridDimensions] != nullptr)
-    {
-        numOfGridDimensions++;
-    };
-    deltaGrid_ = new double[numOfGridDimensions];
-    gridLeftBound_ = new double[numOfGridDimensions];
-    gridLength_ = new unsigned int[numOfGridDimensions];
-    for (int ii = 0; ii < numOfGridDimensions; ++ii)
+    deltaGrid_ = new double[numOfGrids_];
+    gridLeftBound_ = new double[numOfGrids_];
+    gridLength_ = new unsigned int[numOfGrids_];
+    for (int ii = 0; ii < numOfGrids_; ++ii)
     {
         deltaGrid_[ii] = deltaGrid[ii];
         gridLeftBound_[ii] = gridLeftBound[ii];
@@ -82,9 +80,6 @@ MarkovChainParameters::~MarkovChainParameters()
     delete gridLeftBound_;
     delete gridLength_;
     delete deltaGrid_;
-    delete alphaLeftBound_;
-    delete alphaLength_;
-    delete deltaAlpha_;
 }
 
 
@@ -111,14 +106,12 @@ double MarkovChainParameters::getGridAtIndex(unsigned int index, unsigned int gr
     return gridPosition;
 }
 
-double* MarkovChainParameters::getGridAtIndex(unsigned int* index)
+void MarkovChainParameters::getGridAtIndex(unsigned int* index, double* outGrid)
 {
-    double grid[numOfGrids_];
-    for (int ii = 0; ii < numOfGrids_; ++ii)
+    for (unsigned int ii = 0; ii < numOfGrids_; ++ii)
     {
-        grid[ii] = getGridAtIndex(index[ii], ii);
+        outGrid[ii] = getGridAtIndex(index[ii], ii);
     }
-    return grid;
 }
 
 double MarkovChainParameters::getAlphaAtIndex(unsigned int index)
@@ -175,40 +168,22 @@ void MarkovChainParameters::assertParameters(const double* gridLeftBound,
                                              unsigned int alphaLength)
 {
     // First we check that both grid bound arrays and grid length are all of the same array size
-    int counter = 0;
-    do
+    if (gridLeftBound[numOfGrids_-1] == nullptr
+        || gridRightBound[numOfGrids_-1] == nullptr
+        || gridLength[numOfGrids_-1] == nullptr)
     {
-        if (gridLeftBound[counter] != nullptr
-            && gridRightBound[counter] != nullptr
-            && gridLength[counter] != nullptr)
-        {
-            counter++;
-        }
-        else if (gridLeftBound[counter] == nullptr
-                && gridRightBound[counter] == nullptr
-                && gridLength[counter] == nullptr)
-        {
-            break;
-        }
-        else
-        {
-            // An error here is thrown signifying that the gridLeftBound, gridRightBound and gridLength have differing
-            // array sizes.
-            std::cout << "ERROR: In " << typeid(this).name() << " on line " << __LINE__ << std::endl;
-            assert(false);
-        }
-    } while(true);
+        assert(false);
+    }
 
     // Now we ensure appropriate bounds have been given
     assert(alphaLeftBound < alphaRightBound);
     assert(gridLeftBound < gridRightBound);
 
     // Now we ensure appropriate grid lengths and alpha lengths have been given
-    counter = 0;
-    while (gridLength[counter] != nullptr)
+    for (int ii = 0; ii < numOfGrids_; ++ii)
     {
-        assert(gridLength[counter] > 1);
-    };
+        assert(gridLength[ii] > 1);
+    }
     assert(alphaLength > 1);
 }
 
@@ -220,38 +195,22 @@ void MarkovChainParameters::assertParameters(const double* gridLeftBound,
                                              double deltaAlpha)
 {
     // First we check that both grid bound arrays and grid length are all of the same array size
-    int counter = 0;
-    do
+    if (gridLeftBound[numOfGrids_-1] == nullptr
+        || gridRightBound[numOfGrids_-1] == nullptr
+        || deltaGrid[numOfGrids_-1] == nullptr)
     {
-        if (gridLeftBound[counter] != nullptr
-            && gridRightBound[counter] != nullptr)
-        {
-            counter++;
-        }
-        else if (gridLeftBound[counter] == nullptr
-                 && gridRightBound[counter] == nullptr)
-        {
-            break;
-        }
-        else
-        {
-            // An error here is thrown signifying that the gridLeftBound and gridRightBound have differing
-            // array sizes.
-            std::cout << "ERROR: In " << typeid(this).name() << " on line " << __LINE__ << std::endl;
-            assert(false);
-        }
-    } while(true);
+        assert(false);
+    }
 
     // Now we ensure appropriate bounds have been given
     assert(alphaLeftBound < alphaRightBound);
     assert(gridLeftBound < gridRightBound);
 
-    // Now we ensure appropriate grid deltas and alpha deltas have been given (can't be negative)
-    counter = 0;
-    while (deltaGrid[counter] != nullptr)
+    // Now we ensure appropriate grid lengths and alpha lengths have been given
+    for (int ii = 0; ii < numOfGrids_; ++ii)
     {
-        assert(deltaGrid[counter] > 0);
-    };
+        assert(deltaGrid[ii] > 1);
+    }
     assert(deltaAlpha > 0);
 }
 

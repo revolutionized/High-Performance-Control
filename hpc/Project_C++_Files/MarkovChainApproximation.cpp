@@ -1,109 +1,299 @@
 //
-// Created by david on 22/08/17.
+// Created by david on 23/09/17.
 //
 
 #include "MarkovChainApproximation.h"
-#include "Functions.h"
 #include <cassert>
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <iomanip>
 
-//extern "C" {
-//// Get c3 library which is in C-code not C++
-//#include "c3.h"
-//}
+#ifdef _WIN32
+// New line for Windows
+#define NEWL "\r\n"
+#else
+// New line for Unix
+#define NEWL "\n"
+#endif
 
-using namespace std;
+using std::cout;
+using std::endl;
+using std::string;
+using std::vector;
+using std::map;
 
-MarkovChainApproximation::MarkovChainApproximation(double alphaLeftBound,
-                                                   double alphaRightBound,
-                                                   unsigned int alphaLength,
-                                                   double gridLeftBound,
-                                                   double gridRightBound,
-                                                   unsigned int gridLength,
-                                                   double h,
-                                                   double initGuess)
-        : alphaLength_(alphaLength),
-          alphaLeftBound_(alphaLeftBound),
-          gridLeftBound_(gridLeftBound),
-          h_(h)
+
+MarkovChainApproximation::MarkovChainApproximation(MarkovChainParameters& mcp,
+                                                     double initStateGuess,
+                                                     double initAlphaGuess,
+                                                     bool memoryModeRAM,
+                                                     uint precision)
+        : memoryModeRAM_(memoryModeRAM),
+          mcp_(mcp)
 {
-    assert(alphaLeftBound_ < alphaRightBound);
-    assert(gridLeftBound_ < gridRightBound);
-    assert(gridLength > 0);
-    assert(alphaLength > 0);
+    // Set precision of std::out
+    std::setprecision(precision);
 
-    // Set up grid spacing
-    deltaGrid_ = (gridRightBound - gridLeftBound_) / (gridLength - 1);
-    // Set up alpha discretisation
-    deltaAlpha_ = (alphaRightBound - alphaLeftBound_) / (alphaLength - 1);
-
-    // Set allocation sizes for new vectors
-    oldV_ = new std::vector<double>(gridLength);
-    newV_ = new std::vector<double>(gridLength);
-    minAlpha_ = new std::vector<double>(gridLength);
-
-    // Apply initial guess
-    for (int i = 0; i < gridLength; ++i)
+    if (!memoryModeRAM_)
     {
-        (*newV_)[i] = initGuess;
-        (*minAlpha_)[i] = initGuess;
+        // Instead of using in-RAM arrays, we write to a fstreams (files),
+        // since there may not be enough space on the memory
+        for (uint ii = 0; ii < mcp.getNumOfGrids(); ++ii)
+        {
+            file aNewFile;
+            aNewFile.stream = new std::fstream;
+            // Set precision
+            aNewFile.stream->precision(precision);
+            // Set filename
+            aNewFile.filename = ".tmpMCA_Old~" + std::to_string(ii);
+            aNewFile.stream->open(aNewFile.filename);
+            // Apply initial guess
+            for (uint jj = 0; jj < mcp.getGridLength(ii); ++jj)
+            {
+                (*aNewFile.stream) << std::to_string(initStateGuess) << NEWL;
+            }
+            oldVFile_.push_back(aNewFile);
+
+
+            file anotherNewFile;
+            anotherNewFile.stream = new std::fstream;
+            // Set precision
+            anotherNewFile.stream->precision(precision);
+            // Set filename
+            anotherNewFile.filename = ".tmpMCA_New~" + std::to_string(ii);
+            anotherNewFile.stream->open(anotherNewFile.filename);
+            // Apply initial guess
+            for (uint jj = 0; jj < mcp.getGridLength(ii); ++jj)
+            {
+                (*anotherNewFile.stream) << std::to_string(initStateGuess) << NEWL;
+            }
+            newVFile_.push_back(anotherNewFile);
+        }
+        minAlphaFile_.stream = new std::fstream;
+        // Set precision
+        minAlphaFile_.stream->precision(precision);
+        // Set filename
+        minAlphaFile_.filename = ".tmpMCA_alpha";
+        minAlphaFile_.stream->open(minAlphaFile_.filename);
+        // Apply initial guess
+        for (uint jj = 0; jj < mcp.getAlphaLength(); ++jj)
+        {
+            (*minAlphaFile_.stream) << std::to_string(initAlphaGuess) << NEWL;
+        }
+
+        // Assert that all files were correctly opened
+        assert(allStreamsOpen());
     }
-    *oldV_ = *newV_; // Copy the vectors
+    else
+    {
+        // Set allocation sizes for new vectors
+        oldV_ = new map<uint[mcp.getNumOfGrids()], double>;
+        newV_ = new map<uint[mcp.getNumOfGrids()], double>;
+        minAlpha_ = new map<uint[mcp.getNumOfGrids()], double>;
 
-    // Cause BC's aren't really considered, just say the minimum alpha boundaries are zero
-    (*minAlpha_)[0] = 0;
-    (*minAlpha_)[minAlpha_->size() - 1] = 0;
+        uint gridIndices[mcp_.getNumOfGrids()];
+        // We ignore boundaries
+        resetIndices(gridIndices, 1);
 
-    // Set relative error to test against and max iterations
-    epsErr_ = pow(10.0, -3.0);
-    maxIterations_ = 100;
+        do
+        {
+            oldV_->insert(std::make_pair(gridIndices, initStateGuess));
+            minAlpha_->insert(std::make_pair(gridIndices, initAlphaGuess));
+        } while (nextRecursiveGrid(gridIndices, 0));
+
+        std::copy(oldV_->begin(), oldV_->end(), newV_->begin());
+        /*
+        oldV_ = new vector<std::vector<double>*>(mcp.getNumOfGrids());
+        newV_ = new vector<std::vector<double>*>(mcp.getNumOfGrids());
+        minAlpha_ = new vector<vector<double>*>(mcp.getNumOfGrids());
+
+        for (uint ii = 0; ii < mcp.getNumOfGrids(); ++ii)
+        {
+            // Create the oldV array
+            auto anOldV = new vector<double>(mcp.getGridLength(ii));
+            // Apply initial grid guess
+            anOldV->assign(anOldV->size(), initGridGuess[ii]);
+            oldV_->push_back(anOldV);
+
+
+
+            // Create the newV array
+            auto aNewV = new vector<double>(mcp.getGridLength(ii));
+            // Copy initial grid guess
+            std::copy(anOldV->begin(), anOldV->end(), aNewV->begin());
+            newV_->push_back(aNewV);
+
+            // Create the minAlpha array
+            auto aNewAlphaV = new vector<double>(mcp.getGridLength(ii));
+            // Copy initial alpha guess
+            aNewAlphaV->assign(aNewAlphaV->size(), initAlphaGuess);
+            // BC's aren't really considered, so lets set them to zero
+            (*(*minAlpha_)[ii])[0] = 0;
+            (*(*minAlpha_)[ii])[mcp.getGridLength(ii) - 1] = 0;
+            minAlpha_->push_back(aNewAlphaV);
+        }
+        */
+    }
+}
+
+bool MarkovChainApproximation::allStreamsOpen()
+{
+    for (auto&& oldVFile : oldVFile_)
+    {
+        if (!oldVFile.stream->is_open())
+        {
+            return false;
+        }
+    }
+    for (auto&& newVFile : newVFile_)
+    {
+        if (!newVFile.stream->is_open())
+        {
+            return false;
+        }
+    }
+    if (!minAlphaFile_.stream->is_open())
+    {
+        return false;
+    }
+
+    return true;
 }
 
 MarkovChainApproximation::~MarkovChainApproximation()
 {
-    delete oldV_;
-    delete newV_;
-    delete minAlpha_;
+    if (memoryModeRAM_)
+    {
+        /*
+        for (uint ii = 0; ii < oldV_->size(); ++ii)
+        {
+            delete oldV_[ii];
+        }
+        delete oldV_;
+        for (uint ii = 0; ii < newV_->size(); ++ii)
+        {
+            delete newV_[ii];
+        }
+        delete newV_;
+        for (uint ii = 0; ii < minAlpha_->size(); ++ii)
+        {
+            delete minAlpha_[ii];
+        }
+         */
+        delete oldV_;
+        delete newV_;
+        delete minAlpha_;
+    }
+    else
+    {
+        // Close and remove files used for dynamic programming equations
+        for (uint ii = 0; ii < oldVFile_.size(); ++ii)
+        {
+            oldVFile_[ii].deallocate();
+            delete oldVFile_[ii];
+        }
+        for (uint ii = 0; ii < newVFile_.size(); ++ii)
+        {
+            newVFile_[ii].deallocate();
+            delete newVFile_[ii];
+        }
+        minAlphaFile_.deallocate();
+    }
 }
 
-void MarkovChainApproximation::computeMarkovApproximation(const std::function<double(double, double)>& costFunction,
-                                                          const std::function<double(double)>& sigmaFunction)
+void MarkovChainApproximation::computeMarkovApproximation(const std::function<double(double*, double)>& costFunction,
+                                                           const std::function<double(double*, double)>& driftFunction,
+                                                           const std::function<double(double*)>& diffFunction)
 {
-    vector<double> v_probabilities(3);
-    vector<double> v_summed(alphaLength_);
+    // Assign memory for v_summed now to avoid having to reassign the memory in loops
+    vector<double> v_summed(mcp_.getAlphaLength());
+    // Current index of grid (e.g. for a 3x3 system we are at (0,1,3) or something
+    uint gridIndices[mcp_.getNumOfGrids()];
+
+    // These are the two parameters we compare against to know if we should keep looping or not
     double relErr;
-    unsigned int iterations = 0;
+    uint iterations = 0;
 
     std::setprecision(4); // For showing relative error approximate to 4 decimals
-    cout << "==== Starting Markov Chain Approximation technique ====" << endl;
-    do
+    cout << "==== Starting Markov Chain Approximation ====" << endl;
+
+    if (memoryModeRAM_)
     {
-        oldV_->swap(*newV_);
-
-        for (unsigned int xi = 1; xi < newV_->size() - 1; ++xi)
+        do
         {
-            // Solve all summations for different alpha values
-            determineTransitionSummations(v_probabilities, xi, v_summed, costFunction, sigmaFunction);
+            oldV_->swap(*newV_);
+            resetIndices(gridIndices, 1);
+            
+            do
+            {
+                // Solve all summations for different alpha values
+                solveTransitionSummations(v_summed, gridIndices, costFunction, driftFunction, diffFunction);
 
-            // Find the minimum alpha term for the DPE
-            determineMinimumAlpha(v_summed, xi);
-        }
+                // Find the minimum alpha term for the DPE
+                determineMinimumAlpha(v_summed, gridIndices);
 
-        relErr = getRelativeError(newV_, oldV_, static_cast<unsigned int>(newV_->size()));
-        cout << "Markov chain iteration complete. Relative error: " << relErr;
-        cout << ". Iteration: " << iterations << std::endl;
-        iterations++;
+            } while (nextRecursiveGrid(gridIndices, 1));
+            
+            relErr = getRelativeError();
+            
+            cout << "Markov chain iteration complete. Relative error: " << relErr;
+            cout << ". Iteration: " << iterations << endl;
+            iterations++;
+        } while (relErr > mcp_.getRelativeError() && iterations < mcp_.getMaxIterations());
+    }
+    else
+    {
 
-    } while (relErr > epsErr_ && iterations < maxIterations_);
+    }
+
+    cout << "==== Finished Markov Chain Approximation ====" << endl;
 }
 
-double MarkovChainApproximation::B_func(double x, double alpha)
+void MarkovChainApproximation::resetIndices(uint* currentIndices, uint padding)
 {
-    // B_func results already produced, just need to find max
-//    return max(abs(b_result));
-    double result = A * x + B * alpha;
+    // We ignore boundaries
+    for (unsigned int ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
+    {
+        currentIndices[ii] = padding;
+    }
+}
+
+void MarkovChainApproximation::solveTransitionSummations(std::vector<double>& v_summed,
+                                                          uint* gridIndices,
+                                                          const std::function<double(double*, double)>& costFunctionK,
+                                                          const std::function<double(double*, double)>& driftFunction,
+                                                          const std::function<double(double*)>& diffFunction)
+{
+    // Nodes can jump either side of a plane, plus the possibility of not moving
+    uint numOfPossibilities = mcp_.getNumOfGrids()*2 + 1;
+    vector<double> v_probabilities(numOfPossibilities);
+
+    double gridLocation[mcp_.getNumOfGrids()];
+    for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
+    {
+        gridLocation[ii] = mcp_.getGridAtIndex(gridIndices[ii], ii);
+    }
+
+    for (uint ai = 0; ai < mcp_.getAlphaLength(); ++ai)
+    {
+        double alpha = mcp_.getAlphaAtIndex(ai);
+        double den = pow(diffFunction(gridLocation), 2.0) + mcp_.getH() * B_func(driftFunction, gridLocation, alpha);
+        double delta_t = pow(mcp_.getH(), 2.0) / den;
+        double k = costFunctionK(gridLocation, alpha);
+
+        solveTransitionProbabilities(v_probabilities, gridIndices, alpha, den, driftFunction, diffFunction);
+
+        // Solve dynamic programming equation
+        v_summed[ai] = kahanSum(v_probabilities, numOfPossibilities) + delta_t * k;
+    }
+}
+
+double MarkovChainApproximation::B_func(const std::function<double(double*, double)>& driftFunction,
+                                         double* gridLocation,
+                                         double alpha)
+{
+    double result = driftFunction(gridLocation, alpha);
     if (result < 0)
     {
         result = -result;
@@ -111,40 +301,92 @@ double MarkovChainApproximation::B_func(double x, double alpha)
     return result;
 }
 
-
-double MarkovChainApproximation::getGridAtIndex(unsigned int index)
+void MarkovChainApproximation::solveTransitionProbabilities(std::vector<double>& v_probabilities,
+                                                             uint* gridIndices,
+                                                             double alpha, double den,
+                                                             const std::function<double(double*,double)>& driftFunction,
+                                                             const std::function<double(double*)>& diffFunction)
 {
-//    assert(index < newV_.size());
 
-    double gridPosition = gridLeftBound_ + index * deltaGrid_;
-    return gridPosition;
+    vector<double> p(v_probabilities.size());
+    // Begin with probability of getting anything but itself as 0
+    for (uint ii = 0; ii < p.size() - 1; ++ii)
+    {
+        p[ii] = 0;
+    }
+    p[p.size() - 1] = 1;
+    // p[end][1] is unused
+
+    // Determine 'y' -> the positions that this node can move to
+    vector<double[mcp_.getNumOfGrids()]> y(p.size());
+    for (uint ii = 0; ii < y.size() - 1; ii = ii+2)
+    {
+        uint upperGridIndex[mcp_.getNumOfGrids()];
+        uint lowerGridIndex[mcp_.getNumOfGrids()];
+        for (unsigned  jj = 0; jj < mcp_.getNumOfGrids(); ++jj)
+        {
+            upperGridIndex[jj] = gridIndices[jj];
+            lowerGridIndex[jj] = gridIndices[jj];
+            if (ii == jj)
+            {
+                continue;
+            }
+            y[ii][jj] = mcp_.getGridAtIndex(gridIndices[jj], jj);
+        }
+
+        y[ii][ii] = mcp_.getGridAtIndex(gridIndices[ii] - 1, ii) - mcp_.getH();
+        y[ii+1][ii] = mcp_.getGridAtIndex(gridIndices[ii] + 1, ii) + mcp_.getH();
+
+
+        // Now use the values of y to determine transition probabilities (for both the negative and positve part
+        p[ii] = transitionProb(y[ii], ii, y[ii][ii] ,alpha, den, driftFunction, diffFunction);
+        p[ii+1] = transitionProb(y[ii], ii, y[ii+1][ii], alpha, den, driftFunction, diffFunction);
+
+        // Need to match y iteration to the same x iteration value
+        upperGridIndex[ii] += 1;
+        lowerGridIndex[ii] -= 1;
+
+        v_probabilities[ii] = p[ii]*(*oldV_)[upperGridIndex];
+        v_probabilities[ii] += p[ii+1]*(*oldV_)[lowerGridIndex];
+    }
+    // Get current location and probability of staying (remainder)
+    for (unsigned ii = 0; ii < mcp_.getNumOfGrids(); ii++)
+    {
+        y[y.size()-1][ii] = mcp_.getGridAtIndex(gridIndices[ii], ii);
+        p[p.size()-1] = 1;
+        for (uint jj = 0; jj < p.size() - 1; ++jj)
+        {
+            p[p.size()-1] -= p[jj];
+        }
+    }
+
+    // TODO: Remove this if no problems occur, this is just for error checking
+    if (p[p.size()-1] < 0)
+    {
+        cout << "ERROR: Remaining probability less than 0" << endl;
+    }
 }
 
-double MarkovChainApproximation::getAlphaAtIndex(unsigned int index)
+
+double MarkovChainApproximation::transitionProb(double* x,
+                                                 uint currentGridIndex,
+                                                 double y,
+                                                 double alpha,
+                                                 double den,
+                                                 const std::function<double(double*, double)>& driftFunction,
+                                                 const std::function<double(double*)>& diffFunction)
 {
-    assert(index < alphaLength_);
+    double num = pow(diffFunction(x), 2.0);
+    double b_part = driftFunction(x, alpha);
 
-    double alphaPosition = alphaLeftBound_ + index * deltaAlpha_;
-    return alphaPosition;
-}
-
-double MarkovChainApproximation::transitionProb(double x,
-                                                double y,
-                                                double alpha,
-                                                double den,
-                                                const std::function<double(double)>& sigmaFunction)
-{
-    double num = pow(sigmaFunction(x), 2.0);
-
-    double b_part = A * x + B * alpha;
-    if (y > x)
+    if (y > x[currentGridIndex])
     {
         b_part = b_part > 0 ? b_part : 0;
     } else
     {
         b_part = -b_part > 0 ? -b_part : 0;
     }
-    num = num + h_ * b_part;
+    num = num + mcp_.getH() * b_part;
 
     double result = num / den;
     if (result > 1)
@@ -163,7 +405,7 @@ double MarkovChainApproximation::kahanSum(const vector<double>& doubleArray, siz
 
     double sum = 0.0;
     double c = 0.0;
-    for (int i = 0; i < size_n; ++i)
+    for (uint i = 0; i < size_n; ++i)
     {
         double y = doubleArray[i] - c;
         double t = sum + y;
@@ -174,115 +416,128 @@ double MarkovChainApproximation::kahanSum(const vector<double>& doubleArray, siz
     return sum;
 }
 
-void MarkovChainApproximation::determineTransitionProbabilities(vector<double>& v_probabilities,
-                                                                unsigned int xi,
-                                                                double alpha,
-                                                                double den,
-                                                                const std::function<double(double)>& sigmaFunction)
-{
-    std::array<double, 3> p{0, 0, 1};
-    double x = getGridAtIndex(xi);
-    std::array<double, 3> y{x - h_, x + h_, x};
-
-    unsigned int yi;
-    for (yi = 0; yi < 2; ++yi)
-    {
-        p[yi] = transitionProb(x, y[yi], alpha, den, sigmaFunction);
-        // Need to match y iteration to the same x iteration value
-        unsigned int vyi;
-        if (yi == 0)
-        {
-            vyi = xi - 1;
-        } else
-        {
-            vyi = xi + 1;
-        }
-
-        v_probabilities[yi] = p[yi] * (*oldV_)[vyi];
-    }
-    yi = 2;
-    p[yi] = 1 - p[0] - p[1];
-    v_probabilities[yi] = p[yi] * (*oldV_)[xi];
-}
-
-void MarkovChainApproximation::determineTransitionSummations(vector<double>& v_probabilities,
-                                                             unsigned int xi,
-                                                             vector<double>& v_summed,
-                                                             const std::function<double(double, double)>& costFunctionK,
-                                                             const std::function<double(double)>& sigmaFunction)
-{
-    double x = getGridAtIndex(xi);
-
-    for (unsigned int ai = 0; ai < alphaLength_; ++ai)
-    {
-        double alpha = getAlphaAtIndex(ai);
-        double den = pow(sigmaFunction(x), 2.0) + h_ * B_func(x, alpha);
-        double delta_t = pow(h_, 2.0) / den;
-        double k = costFunctionK(x, alpha);
-
-        determineTransitionProbabilities(v_probabilities, xi, alpha, den, sigmaFunction);
-
-        // Solve dynamic programming equation
-        v_summed[ai] = kahanSum(v_probabilities, 3) + delta_t * k;
-    }
-}
-
-void MarkovChainApproximation::determineMinimumAlpha(const vector<double>& v_summed, unsigned int x_index)
+void MarkovChainApproximation::determineMinimumAlpha(const vector<double>& v_summed, uint* gridIndices)
 {
     // Find minimum v_summed and its index
-    int minIndex = 0;
-    for (int i = 1; i < alphaLength_; ++i)
+    uint minIndex = 0;
+    for (uint i = 1; i < mcp_.getAlphaLength(); ++i)
     {
         if (v_summed[i] < v_summed[minIndex])
         {
             minIndex = i;
         }
     }
-    // Set the minimum value of V for that x-index
-    (*newV_)[x_index] = v_summed[minIndex];
+
+    // Set the minimum value of V for that current index
+    (*newV_)[gridIndices] = v_summed[minIndex];
     // Store the minimum alpha value
-    (*minAlpha_)[x_index] = getAlphaAtIndex(static_cast<unsigned int>(minIndex));
+    (*minAlpha_)[gridIndices] = mcp_.getAlphaAtIndex(minIndex);
 }
 
-double MarkovChainApproximation::getRelativeError(const vector<double>* firstArr,
-                                                  const vector<double>* secondArr,
-                                                  unsigned int arrLength)
+bool MarkovChainApproximation::nextRecursiveGrid(uint* currentIndices, uint padding)
+{
+    bool stillInGrid = true;
+    recursionCount(mcp_.getNumOfGrids() - 1, currentIndices, padding, stillInGrid);
+    return stillInGrid;
+}
+
+uint MarkovChainApproximation::recursionCount(uint dimIndex,
+                                               uint* indices,
+                                               uint padding, 
+                                               bool& stillInGrid)
+{
+    if (dimIndex >= 0)
+    {
+        if (indices[dimIndex] < mcp_.getGridLength(dimIndex) - padding - 1)
+        {
+            indices[dimIndex]++;
+        }
+        else
+        {
+            indices[dimIndex] = padding;
+            dimIndex--;
+            recursionCount(dimIndex, indices, padding, stillInGrid);
+        }
+    }
+    else 
+    {
+        stillInGrid = false;
+    }
+}
+
+double MarkovChainApproximation::getRelativeError()
 {
     double temp;
     double maxValue = 0.0;
 
-    for (int i = 0; i < arrLength; ++i)
+    unsigned int gridIndices[mcp_.getNumOfGrids()];
+    resetIndices(gridIndices, 0);
+    
+    do
     {
         // Perform infinity norm
-        temp = (*firstArr)[i] - (*secondArr)[i];
-        if (abs(temp) > maxValue)
+        temp = (*oldV_)[gridIndices] - (*newV_)[gridIndices];
+        if (fabs(temp) > maxValue)
         {
-            maxValue = abs(temp);
+            maxValue = fabs(temp);
         }
-    }
-
+    } while (nextRecursiveGrid(gridIndices, 0));
+        
     return maxValue;
 }
 
-double MarkovChainApproximation::getMarkovControlFunction(double x)
+double MarkovChainApproximation::getMarkovControlFunction(double* gridLocation)
 {
-    return (*minAlpha_)[getGridIndexClosestTo(x)];
+    return (*minAlpha_)[getGridIndicesClosestTo(gridLocation)];
 }
 
-unsigned int MarkovChainApproximation::getGridIndexClosestTo(double x)
+uint* MarkovChainApproximation::getGridIndicesClosestTo(double* gridLocation)
 {
-    unsigned int closestGridIndex = 0;
-    double minDistance = abs(getGridAtIndex(0) - x);
-
-    for (unsigned int i = 1; i < newV_->size(); ++i)
+    // Set initial guess to the origin
+    uint currentGridIndex[mcp_.getNumOfGrids()];
+    uint closestGridIndex[mcp_.getNumOfGrids()];
+    resetIndices(currentGridIndex, 0);
+    for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
     {
-        double gridLoc = getGridAtIndex(i);
-        if (abs(gridLoc - x) < minDistance)
-        {
-            closestGridIndex = i;
-            minDistance = abs(gridLoc - x);
-        }
+        closestGridIndex[ii] = currentGridIndex[ii];
     }
+
+    double minDistance = 0;
+    for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
+    {
+        minDistance += pow(mcp_.getDeltaGrid(ii)*1.5, 2.0);
+    }
+    minDistance = sqrt(minDistance);
+
+    do
+    {
+        double* currentGridLoc;
+        mcp_.getGridAtIndex(currentGridIndex, currentGridLoc);
+        double currentDistance = 0;
+        for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
+        {
+            currentDistance += pow(currentGridLoc[ii] - gridLocation[ii], 2.0);
+        }
+        currentDistance = sqrt(currentDistance);
+
+        if (currentDistance < minDistance)
+        {
+            for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
+            {
+                closestGridIndex[ii] = currentGridIndex[ii];
+            }
+            minDistance = currentDistance;
+        }
+
+    } while (nextRecursiveGrid(currentGridIndex, 0));
 
     return closestGridIndex;
 }
+
+
+
+
+
+
+
+

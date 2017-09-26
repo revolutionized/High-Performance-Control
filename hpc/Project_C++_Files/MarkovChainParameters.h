@@ -25,13 +25,14 @@ struct MarkovChainParameters
     /// \param h This is the level of detail that the Markov Approximation considers (for convergence we want h <
     /// grid spacing (delta x)
     /// \param initGuess The initial guess for the value of the function we are approximating (at x = 0)
-    MarkovChainParameters(const double* gridLeftBound,
-                          const double* gridRightBound,
-                          unsigned int* gridLength,
-                          double alphaLeftBound,
-                          double alphaRightBound,
-                          unsigned int alphaLength,
-                          double h);
+        MarkovChainParameters(const double* gridLeftBound,
+                              const double* gridRightBound,
+                              unsigned int* gridLength,
+                              double alphaLeftBound,
+                              double alphaRightBound,
+                              unsigned int alphaLength,
+                              double h,
+                              unsigned int dimensions);
 
     /// \brief The class must be started with all the appropriate bounds.
     ///
@@ -48,13 +49,9 @@ struct MarkovChainParameters
     /// \param h This is the level of detail that the Markov Approximation considers (for convergence we want h <
     /// grid spacing (delta x)
     /// \param initGuess The initial guess for the value of the function we are approximating (at x = 0)
-    MarkovChainParameters(const double* gridLeftBound,
-                          const double* gridRightBound,
-                          const double* deltaGrid,
-                          double alphaLeftBound,
-                          double alphaRightBound,
-                          double deltaAlpha,
-                          double h);
+    MarkovChainParameters(const double* gridLeftBound, const double* gridRightBound,
+                          const double* deltaGrid, double alphaLeftBound, double alphaRightBound,
+                          double deltaAlpha, double h, unsigned int dimensions);
 
     ~MarkovChainParameters();
 
@@ -74,7 +71,7 @@ struct MarkovChainParameters
     /// \param index The index along the grid array. Must be >= 0 and less than the total length of the grid array.
     double getGridAtIndex(unsigned int index, unsigned int gridNum);
 
-    double* getGridAtIndex(unsigned int* index);
+    void getGridAtIndex(unsigned int* index, double* outGrid);
 
     /// \brief Returns value of alpha array at particular index.
     ///
@@ -123,7 +120,7 @@ private:
     /// Length of the alpha array (could also use sizeof, but this is for convenience)
     unsigned int alphaLength_;
 
-    unsigned int* gridLength_;
+    unsigned int* gridLength_ = nullptr;
 
     unsigned int numOfGrids_;
 
@@ -131,14 +128,14 @@ private:
     ///
     /// Calculating grid points starts from the lower bound and works it way up (so no
     /// need to store the upper bound)
-    double* gridLeftBound_;
+    double* gridLeftBound_ = nullptr;
     /// \brief Lower bound of the alpha array.
     ///
     /// Calculating alpha points starts from the lower bound and works it way up (so no
     /// need to store the upper bound)
     double alphaLeftBound_;
     /// Size of steps between grid array values
-    double* deltaGrid_;
+    double* deltaGrid_ = nullptr;
     /// Size of steps between alpha array values
     double deltaAlpha_;
     /// Scalar approximation parameter that determines

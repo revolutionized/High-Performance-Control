@@ -13,8 +13,8 @@
 #include <cassert>
 
 #include "Functions.h"
-#include "MarkovChainApproximation.h"
-#include "EulerMethod.h"
+#include "MarkovChainApproximation1D.h"
+#include "EulersMethod1D.h"
 extern "C"
 {
 //#include "c3/c3.h" // Already included in the c3sc file
@@ -43,8 +43,8 @@ int main()
     };
 
     // We use the Euler Method class (giving it it's bounding grid)
-    EulerMethod euler(startingBound, exitingBound, euler_grid_size);
-    // And then solve the ODE using Euler's method and the function for the derivative we put together before
+    EulersMethod1D euler(startingBound, exitingBound, euler_grid_size);
+    // And then solveExact the ODE using Euler's method and the function for the derivative we put together before
     euler.solve(fcnDerivativeExact, initGuess);
 
     // Create file and load it with the exact data results (the state space)
@@ -88,8 +88,8 @@ int main()
     double markovInitGuess = 2.0;
     const std::function<double(double,double)> fcnCost = costFunction;
 
-    // Markov Chain Approximation (MCA) will solve the optimal cost values and ODE values at each point
-    MarkovChainApproximation markovCA(alphaStartingBound,
+    // Markov Chain Approximation (MCA) will solveExact the optimal cost values and ODE values at each point
+    MarkovChainApproximation1D markovCA(alphaStartingBound,
                                       alphaExitingBound,
                                       markov_alpha_discretisation_size,
                                       startingBound,
@@ -102,7 +102,7 @@ int main()
     const std::function<double(double, double)> fcnOde = problemOde;
     markovCA.computeMarkovApproximation(fcnCost, fcnSigma);
 
-    // The EulerMethod function has a solve that allows you to pass it the MCA object, and thus it utilises the MCA
+    // The EulersMethod1D function has a solveExact that allows you to pass it the MCA object, and thus it utilises the MCA
     // ODE state space results and optimal control results.
     const std::function<double(double, double)> fcnDerivativeMarkov = problemOde;
     euler.solve(fcnDerivativeMarkov, markovCA, initGuess);

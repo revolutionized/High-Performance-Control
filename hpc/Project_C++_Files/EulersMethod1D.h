@@ -4,23 +4,23 @@
 #pragma once
 
 #include <functional>
-#include "MarkovChainApproximation.h"
+#include "MarkovChainApproximation1D.h"
 
 #define GRID 1
 #define FUNC 2
 
 ///
-class EulerMethod
+class EulersMethod1D
 {
 public:
     ///
     /// \param leftBound
     /// \param rightBound
     /// \param gridSize
-	explicit EulerMethod(double leftBound, double rightBound, unsigned int gridSize);
+	explicit EulersMethod1D(double leftBound, double rightBound, unsigned int gridSize);
 
     ///
-    ~EulerMethod();
+    ~EulersMethod1D();
 
     ///
     /// \param fcnDerivative
@@ -32,7 +32,7 @@ public:
     /// \param mca
     /// \param initGuess
     void solve(const std::function<double(double, double)>& fcnDerivative,
-			   MarkovChainApproximation& mca,
+			   MarkovChainApproximation1D& mca,
 			   double initGuess);
 
     ///

@@ -5,11 +5,11 @@
 #include <iostream>
 #include <cassert>
 
-#include "MarkovChainApproximation.h"
-#include "EulerMethod.h"
+#include "MarkovChainApproximation1D.h"
+#include "EulersMethod1D.h"
 
 
-EulerMethod::EulerMethod(double leftBound, double rightBound, unsigned int gridSize)
+EulersMethod1D::EulersMethod1D(double leftBound, double rightBound, unsigned int gridSize)
 : leftBound_(leftBound),
   rightBound_(rightBound),
   gridLength_(gridSize)
@@ -20,12 +20,12 @@ EulerMethod::EulerMethod(double leftBound, double rightBound, unsigned int gridS
 	dx_ = (rightBound_ - leftBound_) / (gridLength_ - 1);
 }
 
-EulerMethod::~EulerMethod() 
+EulersMethod1D::~EulersMethod1D()
 {
     clearSolution();
 }
 
-void EulerMethod::solve(const std::function<double(double, double)> &fcnDerivative, double initGuess)
+void EulersMethod1D::solve(const std::function<double(double, double)> &fcnDerivative, double initGuess)
 {
     setUpSolutionDuringSolve(initGuess);
 
@@ -38,7 +38,7 @@ void EulerMethod::solve(const std::function<double(double, double)> &fcnDerivati
     }
 }
 
-double EulerMethod::getGridAtIndex(unsigned int index)
+double EulersMethod1D::getGridAtIndex(unsigned int index)
 {
     assert(index < gridLength_);
 
@@ -46,18 +46,18 @@ double EulerMethod::getGridAtIndex(unsigned int index)
     return gridPosition;
 }
 
-unsigned int EulerMethod::getGridLength()
+unsigned int EulersMethod1D::getGridLength()
 {
     return gridLength_;
 }
 
-double** EulerMethod::getSolutionPtr()
+double** EulersMethod1D::getSolutionPtr()
 {
     return solution_;
 }
 
-void EulerMethod::solve(const std::function<double(double, double)>& fcnDerivative,
-                        MarkovChainApproximation& mca,
+void EulersMethod1D::solve(const std::function<double(double, double)>& fcnDerivative,
+                        MarkovChainApproximation1D& mca,
                         double initGuess)
 {
     setUpSolutionDuringSolve(initGuess);
@@ -71,7 +71,7 @@ void EulerMethod::solve(const std::function<double(double, double)>& fcnDerivati
     }
 }
 
-void EulerMethod::setUpSolutionDuringSolve(double initGuess)
+void EulersMethod1D::setUpSolutionDuringSolve(double initGuess)
 {
     // Setup solution memory and insert initial guess
     if (solution_ == nullptr)
@@ -91,7 +91,7 @@ void EulerMethod::setUpSolutionDuringSolve(double initGuess)
     }
 }
 
-void EulerMethod::clearSolution()
+void EulersMethod1D::clearSolution()
 {
     if (solution_ != nullptr)
     {
