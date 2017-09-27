@@ -4,9 +4,10 @@
 
 #pragma once
 
+#include "multidim/GridParameters.h"
 #include <cassert>
 
-struct MarkovChainParameters
+struct MarkovChainParameters : public GridParameters
 {
     // METHODS ------------------------------------------------------------------------------------------------- METHODS
 
@@ -53,25 +54,14 @@ struct MarkovChainParameters
                           const double* deltaGrid, double alphaLeftBound, double alphaRightBound,
                           double deltaAlpha, double h, unsigned int dimensions);
 
-    ~MarkovChainParameters();
 
     // SETTERS ------------------------------------------------------------------------------------------------- SETTERS
 
     void setMaxIterations(unsigned int maxIters);
 
-    void setRelativeError(double epsErr);
+    void setMinError(double epsErr);
 
     // GETTERS ------------------------------------------------------------------------------------------------- GETTERS
-
-    /// \brief Returns value of grid array at particular index
-    ///
-    /// Technically there is no array for the grid. Instead of storing the grid as another large array and obvious (in
-    /// the sense that it's one increment after the other), this function just calculates and returns the grid at the
-    /// specified index.
-    /// \param index The index along the grid array. Must be >= 0 and less than the total length of the grid array.
-    double getGridAtIndex(unsigned int index, unsigned int gridNum);
-
-    void getGridAtIndex(unsigned int* index, double* outGrid);
 
     /// \brief Returns value of alpha array at particular index.
     ///
@@ -81,13 +71,7 @@ struct MarkovChainParameters
     /// \param index The index along the alpha array. Must be >= 0 and less than the total length of the alpha array.
     double getAlphaAtIndex(unsigned int index);
 
-    unsigned int getNumOfGrids();
-
-    unsigned int getGridLength(unsigned int gridNum);
-
     unsigned int getAlphaLength();
-
-    double getDeltaGrid(unsigned int gridNum);
 
     unsigned int getMaxIterations();
 
@@ -96,46 +80,15 @@ struct MarkovChainParameters
     double getH();
 
 private:
-    // METHODS ------------------------------------------------------------------------------------------------- METHODS
-
-    /// Asserts appropriate parameters
-    void assertParameters(const double* gridLeftBound,
-                          const double* gridRightBound,
-                          const double* deltaGrid,
-                          double alphaLeftBound,
-                          double alphaRightBound,
-                          double deltaAlpha);
-
-    /// Asserts appropriate parameters
-    void assertParameters(const double* gridLeftBound,
-                          const double* gridRightBound,
-                          const unsigned int* gridLength,
-                          double alphaLeftBound,
-                          double alphaRightBound,
-                          unsigned int alphaLength);
-
-
     // FIELDS --------------------------------------------------------------------------------------------------- FIELDS
 
     /// Length of the alpha array (could also use sizeof, but this is for convenience)
     unsigned int alphaLength_;
-
-    unsigned int* gridLength_ = nullptr;
-
-    unsigned int numOfGrids_;
-
-    /// \brief Lower bound of the grid array.
-    ///
-    /// Calculating grid points starts from the lower bound and works it way up (so no
-    /// need to store the upper bound)
-    double* gridLeftBound_ = nullptr;
     /// \brief Lower bound of the alpha array.
     ///
     /// Calculating alpha points starts from the lower bound and works it way up (so no
     /// need to store the upper bound)
     double alphaLeftBound_;
-    /// Size of steps between grid array values
-    double* deltaGrid_ = nullptr;
     /// Size of steps between alpha array values
     double deltaAlpha_;
     /// Scalar approximation parameter that determines

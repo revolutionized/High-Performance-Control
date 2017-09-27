@@ -9,6 +9,7 @@
 #include <map>
 #include <fstream>
 #include "MarkovChainParameters.h"
+#include "multidim/GridIndex.h"
 
 typedef const std::function<double(double*, double)> fcn2dep;
 typedef const std::function<double(double*)> fcn1dep;
@@ -48,8 +49,6 @@ public:
 private:
     // METHODS ------------------------------------------------------------------------------------------------- METHODS
 
-    void resetIndices(uint* currentIndices, uint padding);
-
     bool nextRecursiveGrid(unsigned int* currentIndices, unsigned int padding);
 
     uint recursionCount(uint dimIndex, uint* indices, uint padding, bool& stillInGrid);
@@ -64,7 +63,7 @@ private:
     /// \param costFunctionK Same cost function given at the computeMarkovApproximation call
     /// \param diffFunction Same sigma function given at the computeMarkovApproximation call
     void solveTransitionSummations(std::vector<double>& v_summed,
-                                   unsigned int* gridIndices,
+                                   GridIndex& gridIndices,
                                    fcn2dep& costFunctionK,
                                    fcn2dep& driftFunction,
                                    fcn1dep& diffFunction);
@@ -72,7 +71,7 @@ private:
     /// \brief B function with no control dependency
     /// See "Numerical Methods for Stochastic Control Problems in Continuous Time" (H. J. Kushner) pg. 99 where it gives
     /// B(x) = max_{\alpha\el U} \abs{b(x,\alpha)}.
-    double B_func(const std::function<double(double*, double)>& driftFunction,
+    double B_func(fcn2dep& driftFunction,
                   double* gridLocation,
                   double alpha);
 
@@ -86,7 +85,7 @@ private:
     /// \param diffFunction Same sigma function given at the computeMarkovApproximation call
     void
     solveTransitionProbabilities(std::vector<double>& v_probabilities,
-                                 unsigned int* gridIndices,
+                                 GridIndex& gridIndices,
                                  double alpha,
                                  double den,
                                  fcn2dep& driftFunction,
@@ -121,7 +120,7 @@ private:
     /// This is a convenience function for splitting the code into smaller chunks.
     /// \param v_summed The values of the dynamic programming equation at each alpha value
     /// \param gridIndices The current index of the grid
-    void determineMinimumAlpha(const std::vector<double>& v_summed, unsigned int* gridIndices);
+    void determineMinimumAlpha(const std::vector<double>& v_summed, GridIndex& gridIndices);
 
     /// \brief Returns relative error between two arrays.
     ///
@@ -165,13 +164,13 @@ private:
     MarkovChainParameters mcp_;
 
     /// The last iterations values of the dynamic programming equation at each grid index
-    std::map<unsigned int[], double>* oldV_ = nullptr;
+    std::map<GridIndex, double>* oldV_ = nullptr;
 //    std::vector<std::vector<double>*>* oldV_ = nullptr;
     /// The current iterations values of the dynamic programming equation at each grid index
-    std::map<unsigned int[], double>* newV_ = nullptr;
+    std::map<GridIndex, double>* newV_ = nullptr;
 //    std::vector<std::vector<double>*>* newV_ = nullptr;
     /// The values for the optimal alpha (or control parameter) for each index along the grid is stored in this vector
-    std::map<unsigned int[], double>* minAlpha_ = nullptr;
+    std::map<GridIndex, double>* minAlpha_ = nullptr;
 //    std::vector<std::vector<double>*>* minAlpha_ = nullptr;
 
 };

@@ -12,9 +12,9 @@
 #include <fstream>
 
 #include "Functions2.h"
-#include "MarkovChainApproximation.h"
-#include "EulerParameters.h"
-#include "EulersMethod.h"
+#include "mca/MarkovChainApproximation.h"
+#include "eulersmethod/EulerParameters.h"
+#include "eulersmethod/EulersMethod.h"
 
 using std::cout;
 using std::endl;
@@ -73,7 +73,6 @@ int main()
         euler->saveGrid(exactControLFileStream);
 
         // Only the grid has been saved, need to add the minimum control for that point
-
         uint gridIndices[epm.getNumOfGrids()];
         for (int ii = 0; ii < epm.getNumOfGrids(); ++ii)
         {
@@ -129,13 +128,8 @@ int main()
 
     // The EulersMethod1D function has a solve that allows you to pass it the MCA object, and thus it utilises the MCA
     // ODE state space results and optimal control results.
-//    const std::function<double(double*, double)> fcnDerivativeMarkov = problemOde2;
-    const std::function<double(double*)> fcnDerivativeMarkov = [](double* x)
-    {
-        return problemOde2(x, markovCA.getMarkovControlFunction(x));
-    };
-
-    euler->solve(fcnDerivativeMarkov, markovInitGuess);
+    const std::function<double(double*, double)> fcnDerivativeMarkov = problemOde2;
+    euler->solve(fcnDerivativeMarkov, markovCA, markovInitGuess);
 
     // Create file with exact data (same as before)
     ofstream markovEulerFile;

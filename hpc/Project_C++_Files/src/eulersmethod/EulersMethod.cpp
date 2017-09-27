@@ -11,7 +11,7 @@ EulersMethod::EulersMethod(EulerParameters& epm)
     setUpSolution();
 }
 
-EulersMethod::~EulerMethod()
+EulersMethod::~EulersMethod()
 {
     delete solution_;
 }
@@ -20,32 +20,30 @@ void EulersMethod::solve(fcn1dep& fcnDerivative, double initGuess)
 {
     uint gridIndices[epm_.getNumOfGrids()];
     uint previousGridIndices[epm_.getNumOfGrids()];
-
     resetIndices(gridIndices, 0);
     resetIndices(previousGridIndices, 0);
+
     (*solution_)[gridIndices] = initGuess;
 
     for (uint ii = 0; ii < epm_.getNumOfGrids(); ++ii)
     {
         recursiveSolve(ii, gridIndices, previousGridIndices, fcnDerivative);
     }
-
-    do
-    {
-
-    } while (nextRecursiveGrid(gridIndices, previousGridIndices, 0));
 }
 
 void EulersMethod::solve(fcn2dep& fcnDerivative, MarkovChainApproximation& mca, double initGuess)
 {
-//    for (int jj = currentGrid; jj < epm_.getGridLength(currentGrid); ++jj)
-//    {
-//        recursiveSolve(currentGrid, gridIndices, previousIndices, fcnDerivative);
-//        double gridLocation[epm_.getNumOfGrids()];
-//        epm_.getGridAtIndex(gridIndices, gridLocation);
-//        double df = fcnDerivative(gridLocation);
-//        (*solution_)[gridIndices] = (*solution_)[previousIndices] + epm_.getDeltaGrid(currentGrid);
-//    }
+    uint gridIndices[epm_.getNumOfGrids()];
+    uint previousGridIndices[epm_.getNumOfGrids()];
+    resetIndices(gridIndices, 0);
+    resetIndices(previousGridIndices, 0);
+
+    (*solution_)[gridIndices] = initGuess;
+
+    for (uint ii = 0; ii < epm_.getNumOfGrids(); ++ii)
+    {
+        recursiveSolve(ii, gridIndices, previousGridIndices, fcnDerivative, mca);
+    }
 }
 
 
@@ -104,6 +102,22 @@ void EulersMethod::recursiveSolve(uint currentGrid,
         double gridLocation[epm_.getNumOfGrids()];
         epm_.getGridAtIndex(gridIndices, gridLocation);
         double df = fcnDerivative(gridLocation);
+        (*solution_)[gridIndices] = (*solution_)[previousIndices] + epm_.getDeltaGrid(currentGrid)*df;
+    }
+}
+
+void EulersMethod::recursiveSolve(uint currentGrid,
+                                  uint* gridIndices,
+                                  uint* previousIndices,
+                                  fcn2dep& fcnDerivative,
+                                  MarkovChainApproximation& mca)
+{
+    for (unsigned int jj = currentGrid; jj < epm_.getGridLength(currentGrid); ++jj)
+    {
+        recursiveSolve(currentGrid, gridIndices, previousIndices, fcnDerivative, mca);
+        double gridLocation[epm_.getNumOfGrids()];
+        epm_.getGridAtIndex(gridIndices, gridLocation);
+        double df = fcnDerivative(gridLocation, mca.getMarkovControlFunction(x));
         (*solution_)[gridIndices] = (*solution_)[previousIndices] + epm_.getDeltaGrid(currentGrid)*df;
     }
 }

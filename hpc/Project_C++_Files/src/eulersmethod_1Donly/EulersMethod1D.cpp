@@ -5,7 +5,7 @@
 #include <iostream>
 #include <cassert>
 
-#include "MarkovChainApproximation1D.h"
+#include "../mca_1Donly/MarkovChainApproximation1D.h"
 #include "EulersMethod1D.h"
 
 

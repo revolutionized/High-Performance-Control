@@ -13,8 +13,8 @@
 #include <cassert>
 
 #include "Functions.h"
-#include "MarkovChainApproximation1D.h"
-#include "EulersMethod1D.h"
+#include "../../src/mca_1Donly/MarkovChainApproximation1D.h"
+#include "../../src/eulersmethod_1Donly/EulersMethod1D.h"
 extern "C"
 {
 //#include "c3/c3.h" // Already included in the c3sc file

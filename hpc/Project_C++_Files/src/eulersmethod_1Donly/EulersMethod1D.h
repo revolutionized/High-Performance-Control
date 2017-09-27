@@ -4,7 +4,7 @@
 #pragma once
 
 #include <functional>
-#include "MarkovChainApproximation1D.h"
+#include "../mca_1Donly/MarkovChainApproximation1D.h"
 
 #define GRID 1
 #define FUNC 2

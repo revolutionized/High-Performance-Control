@@ -6,7 +6,7 @@
 
 #include <functional>
 #include "EulerParameters.h"
-#include "MarkovChainApproximation.h"
+#include "mca/MarkovChainApproximation.h"
 
 #ifdef _WIN32
 // New line for Windows
@@ -26,7 +26,7 @@ public:
 
     explicit EulersMethod(EulerParameters& epm);
 
-    ~EulerMethod();
+    ~EulersMethod();
 
     void solve(fcn1dep& fcnDerivative, double initGuess);
 
@@ -60,6 +60,9 @@ private:
                         uint* gridIndices,
                         uint* previousIndices,
                         fcn1dep& fcnDerivative);
+
+    void recursiveSolve(uint currentGrid, uint* gridIndices, uint* previousIndices, fcn2dep& fcnDerivative,
+                        MarkovChainApproximation& mca);
 };
 
 
