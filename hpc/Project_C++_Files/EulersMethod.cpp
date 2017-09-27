@@ -4,6 +4,7 @@
 
 #include "EulersMethod.h"
 
+
 EulersMethod::EulersMethod(EulerParameters& epm)
     : epm_(epm)
 {
@@ -15,17 +16,16 @@ EulersMethod::~EulerMethod()
     delete solution_;
 }
 
-void EulersMethod::solveExact(fcn1dep& fcnDerivative, double initGuess)
+void EulersMethod::solve(fcn1dep& fcnDerivative, double initGuess)
 {
-    double df;
-    unsigned int gridIndices[epm_.getNumOfGrids()];
-    unsigned int previousGridIndices[epm_.getNumOfGrids()];
+    uint gridIndices[epm_.getNumOfGrids()];
+    uint previousGridIndices[epm_.getNumOfGrids()];
 
     resetIndices(gridIndices, 0);
     resetIndices(previousGridIndices, 0);
     (*solution_)[gridIndices] = initGuess;
 
-    for (int ii = 0; ii < epm_.getNumOfGrids(); ++ii)
+    for (uint ii = 0; ii < epm_.getNumOfGrids(); ++ii)
     {
         recursiveSolve(ii, gridIndices, previousGridIndices, fcnDerivative);
     }
@@ -36,46 +36,78 @@ void EulersMethod::solveExact(fcn1dep& fcnDerivative, double initGuess)
     } while (nextRecursiveGrid(gridIndices, previousGridIndices, 0));
 }
 
-void EulersMethod::setUpSolution()
+void EulersMethod::solve(fcn2dep& fcnDerivative, MarkovChainApproximation& mca, double initGuess)
 {
-    // Setup solution memory and insert initial guess
-    if (solution_ != nullptr)
-    {
-        delete solution_;
-    }
-    else
-    {
-        unsigned int gridIndices[epm_.getNumOfGrids()];
-        solution_ = new std::map<unsigned int[epm_.getNumOfGrids()], double>;
-        resetIndices(gridIndices, 0);
+//    for (int jj = currentGrid; jj < epm_.getGridLength(currentGrid); ++jj)
+//    {
+//        recursiveSolve(currentGrid, gridIndices, previousIndices, fcnDerivative);
+//        double gridLocation[epm_.getNumOfGrids()];
+//        epm_.getGridAtIndex(gridIndices, gridLocation);
+//        double df = fcnDerivative(gridLocation);
+//        (*solution_)[gridIndices] = (*solution_)[previousIndices] + epm_.getDeltaGrid(currentGrid);
+//    }
+}
 
-        do
+
+void EulersMethod::saveSolution(std::ofstream& stream)
+{
+    uint gridIndices[epm_.getNumOfGrids()];
+    resetIndices(gridIndices, 0);
+
+    // Fill solution at each point of the grid
+    do
+    {
+        for (uint ii = 0; ii < epm_.getNumOfGrids(); ++ii)
         {
-            solution_->insert(std::make_pair(gridIndices, 0));
-        } while (nextRecursiveGrid(gridIndices, nullptr, 0));
-    }
+            stream << epm_.getGridAtIndex(gridIndices[ii], ii) << " ";
+        }
+        stream << (*solution_)[gridIndices] << NEWL;
+    } while (nextRecursiveGrid(gridIndices, nullptr, 0));
 }
 
-void EulersMethod::resetIndices(uint* currentIndices, uint padding)
+
+void EulersMethod::saveGrid(std::ofstream& stream)
 {
-    // We ignore boundaries
-    for (unsigned int ii = 0; ii < epm_.getNumOfGrids(); ++ii)
+    uint gridIndices[epm_.getNumOfGrids()];
+    resetIndices(gridIndices, 0);
+
+    // Fill each grid point
+    do
     {
-        currentIndices[ii] = padding;
-    }
+        for (uint ii = 0; ii < epm_.getNumOfGrids(); ++ii)
+        {
+            stream << epm_.getGridAtIndex(gridIndices[ii], ii) << " ";
+        }
+        stream << NEWL;
+    } while (nextRecursiveGrid(gridIndices, nullptr, 0));
 }
 
-bool EulersMethod::nextRecursiveGrid(uint* currentIndices, uint* previousIndices, uint padding)
+// PRIVATE METHODS -------------------------------------------------------- PRIVATE METHODS //
+
+uint EulersMethod::getSolutionIndexRelative(const uint* gridIndices)
 {
-    for (int ii = 0; ii < epm_.getNumOfGrids(); ++ii)
+    uint relIndex = 0;
+    for (int ii = epm_.getNumOfGrids() - 1; ii >= 0; --ii)
     {
-        previousIndices[ii] = currentIndices[ii];
+        relIndex += (epm_.getNumOfGrids() - 1 - ii)*gridIndices[ii];
     }
-
-    bool stillInGrid = true;
-    recursionCount(epm_.getNumOfGrids() - 1, currentIndices, padding, stillInGrid);
-    return stillInGrid;
 }
+
+void EulersMethod::recursiveSolve(uint currentGrid,
+                                  uint* gridIndices,
+                                  uint* previousIndices,
+                                  fcn1dep& fcnDerivative)
+{
+    for (unsigned int jj = currentGrid; jj < epm_.getGridLength(currentGrid); ++jj)
+    {
+        recursiveSolve(currentGrid, gridIndices, previousIndices, fcnDerivative);
+        double gridLocation[epm_.getNumOfGrids()];
+        epm_.getGridAtIndex(gridIndices, gridLocation);
+        double df = fcnDerivative(gridLocation);
+        (*solution_)[gridIndices] = (*solution_)[previousIndices] + epm_.getDeltaGrid(currentGrid)*df;
+    }
+}
+
 
 uint EulersMethod::recursionCount(uint dimIndex, uint* indices, uint padding, bool& stillInGrid)
 {
@@ -98,24 +130,42 @@ uint EulersMethod::recursionCount(uint dimIndex, uint* indices, uint padding, bo
     }
 }
 
-unsigned int EulersMethod::getSolutionIndexRelative(unsigned int* gridIndices)
+void EulersMethod::setUpSolution()
 {
-    unsigned int relIndex = 0;
-    for (int ii = epm_.getNumOfGrids() - 1; ii >= 0; --ii)
+    delete solution_;
+
+    // Setup solution memory and insert initial guess
+    uint gridIndices[epm_.getNumOfGrids()];
+    solution_ = new std::map<uint[epm_.getNumOfGrids()], double>;
+    resetIndices(gridIndices, 0);
+
+    do
     {
-        relIndex += (epm_.getNumOfGrids() - 1 - ii)*gridIndices[ii];
+        solution_->insert(std::make_pair(gridIndices, 0));
+    } while (nextRecursiveGrid(gridIndices, nullptr, 0));
+
+}
+
+void EulersMethod::resetIndices(uint* currentIndices, uint padding)
+{
+    // We ignore boundaries
+    for (uint ii = 0; ii < epm_.getNumOfGrids(); ++ii)
+    {
+        currentIndices[ii] = padding;
     }
 }
 
-void EulersMethod::recursiveSolve(int currentGrid, unsigned int* gridIndices, unsigned int* previousIndices,
-                                  fcn1dep& fcnDerivative)
+bool EulersMethod::nextRecursiveGrid(uint* currentIndices, uint* previousIndices, uint padding)
 {
-    for (int jj = currentGrid; jj < epm_.getGridLength(currentGrid); ++jj)
+    if (previousIndices != nullptr)
     {
-        recursiveSolve(currentGrid, gridIndices, previousIndices, fcnDerivative);
-        double gridLocation[epm_.getNumOfGrids()];
-        epm_.getGridAtIndex(gridIndices, gridLocation);
-        double df = fcnDerivative(gridLocation);
-        (*solution_)[gridIndices] = (*solution_)[previousIndices] + epm_.getDeltaGrid(currentGrid);
+        for (int ii = 0; ii < epm_.getNumOfGrids(); ++ii)
+        {
+            previousIndices[ii] = currentIndices[ii];
+        }
     }
+
+    bool stillInGrid = true;
+    recursionCount(epm_.getNumOfGrids() - 1, currentIndices, padding, stillInGrid);
+    return stillInGrid;
 }

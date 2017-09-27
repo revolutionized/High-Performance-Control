@@ -45,7 +45,7 @@ private:
 
     void assertParameters(const double* gridLeftBound,
                           const double* gridRightBound,
-                          unsigned int* gridLength);
+                          const unsigned int* gridLength);
 
     void assertParameters(const double* gridLeftBound,
                           const double* gridRightBound,

@@ -25,14 +25,14 @@ struct MarkovChainParameters
     /// \param h This is the level of detail that the Markov Approximation considers (for convergence we want h <
     /// grid spacing (delta x)
     /// \param initGuess The initial guess for the value of the function we are approximating (at x = 0)
-        MarkovChainParameters(const double* gridLeftBound,
-                              const double* gridRightBound,
-                              unsigned int* gridLength,
-                              double alphaLeftBound,
-                              double alphaRightBound,
-                              unsigned int alphaLength,
-                              double h,
-                              unsigned int dimensions);
+        explicit MarkovChainParameters(const double* gridLeftBound,
+                                       const double* gridRightBound,
+                                       unsigned int* gridLength,
+                                       double alphaLeftBound,
+                                       double alphaRightBound,
+                                       unsigned int alphaLength,
+                                       double h,
+                                       unsigned int dimensions);
 
     /// \brief The class must be started with all the appropriate bounds.
     ///
@@ -109,7 +109,7 @@ private:
     /// Asserts appropriate parameters
     void assertParameters(const double* gridLeftBound,
                           const double* gridRightBound,
-                          unsigned int* gridLength,
+                          const unsigned int* gridLength,
                           double alphaLeftBound,
                           double alphaRightBound,
                           unsigned int alphaLength);

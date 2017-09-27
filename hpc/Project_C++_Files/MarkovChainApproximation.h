@@ -18,10 +18,9 @@ class MarkovChainApproximation
 public:
     // METHODS ------------------------------------------------------------------------------------------------- METHODS
     explicit MarkovChainApproximation(MarkovChainParameters& mcp,
-                                       double initStateGuess,
-                                       double initAlphaGuess,
-                                       bool memoryModeRAM,
-                                       unsigned int precision);
+                                      double initStateGuess,
+                                      unsigned int precision,
+                                      bool memoryModeRAM = false);
 
     /// \brief Deallocates all memory that this class needed
     ~MarkovChainApproximation();
@@ -32,9 +31,9 @@ public:
     /// \param diffFunction The sigma function is often called the diffusion term and often represents represents the
     /// noise / stochastic disturbance being introduced to the system. It is given as a std::function and takes a double
     /// array representing the diffusion applied to each subsystem
-    void computeMarkovApproximation(const std::function<double(double*, double)>& costFunction,
-                                    const std::function<double(double*, double)>& driftFunction,
-                                    const std::function<double(double*)>& diffFunction);
+    void computeMarkovApproximation(fcn2dep& costFunction,
+                                    fcn2dep& driftFunction,
+                                    fcn1dep& diffFunction);
 
     /// \brief Finds the most optimal control value at a specific location along arbitrary one-dimensional grid.
     ///
@@ -66,9 +65,9 @@ private:
     /// \param diffFunction Same sigma function given at the computeMarkovApproximation call
     void solveTransitionSummations(std::vector<double>& v_summed,
                                    unsigned int* gridIndices,
-                                   const std::function<double(double*, double)>& costFunctionK,
-                                   const std::function<double(double*, double)>& driftFunction,
-                                   const std::function<double(double*)>& diffFunction);
+                                   fcn2dep& costFunctionK,
+                                   fcn2dep& driftFunction,
+                                   fcn1dep& diffFunction);
 
     /// \brief B function with no control dependency
     /// See "Numerical Methods for Stochastic Control Problems in Continuous Time" (H. J. Kushner) pg. 99 where it gives
@@ -90,8 +89,8 @@ private:
                                  unsigned int* gridIndices,
                                  double alpha,
                                  double den,
-                                 const std::function<double(double*, double)>& driftFunction,
-                                 const std::function<double(double*)>& diffFunction);
+                                 fcn2dep& driftFunction,
+                                 fcn1dep& diffFunction);
 
     /// \brief Returns the value of $ p^{h}(x, y | \alpha) $
     /// \param x Current value of grid location
@@ -104,8 +103,8 @@ private:
                           double y,
                           double alpha,
                           double den,
-                          const std::function<double(double*, double)>& driftFunction,
-                          const std::function<double(double*)>& diffFunction);
+                          fcn2dep& driftFunction,
+                          fcn1dep& diffFunction);
 
     /// \brief Summation of double array elements using Kahan formula (which ensures rounding errors aren't lost)
     /// \param doubleArray The array whose elements are to be summed
@@ -133,7 +132,7 @@ private:
 
     /// \brief Searches and finds the index of the grid array that most closely matches with the value of x given
     /// \param gridLocation Can be anything, but for proper use should be between the lower and upper bounds of the grid
-    unsigned int* getGridIndicesClosestTo(double* gridLocation);
+    void getGridIndicesClosestTo(double* gridLocation, uint* closestGridIndex);
 
     bool allStreamsOpen();
 

@@ -90,7 +90,7 @@ double EulerParameters::getDeltaGrid(unsigned int gridIndex)
 
 void EulerParameters::assertParameters(const double* gridLeftBound,
                                        const double* gridRightBound,
-                                       uint* gridLength)
+                                       const uint* gridLength)
 {
     // First we check that both grid bound arrays and grid length are all of the same array size
     if (gridLeftBound[numOfGridDimensions_-1] == nullptr
