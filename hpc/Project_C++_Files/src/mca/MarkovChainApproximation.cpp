@@ -51,7 +51,7 @@ MarkovChainApproximation::MarkovChainApproximation(MarkovChainParameters& mcp,
             {
                 (*aNewFile.stream) << std::to_string(initStateGuess) << NEWL;
             }
-            oldVFile_.push_back(aNewFile);
+            oldVFile_->push_back(aNewFile);
 
 
             file anotherNewFile;
@@ -66,7 +66,7 @@ MarkovChainApproximation::MarkovChainApproximation(MarkovChainParameters& mcp,
             {
                 (*anotherNewFile.stream) << std::to_string(initStateGuess) << NEWL;
             }
-            newVFile_.push_back(anotherNewFile);
+            newVFile_->push_back(anotherNewFile);
         }
         minAlphaFile_.stream = new std::fstream;
         // Set precision
@@ -81,44 +81,39 @@ MarkovChainApproximation::MarkovChainApproximation(MarkovChainParameters& mcp,
     else
     {
         // Set allocation sizes for new vectors
-        oldV_ = new map<GridIndex, double>;
-        newV_ = new map<GridIndex, double>;
-        minAlpha_ = new map<GridIndex, double>;
+        oldV_ = new GridValue;
+        newV_ = new GridValue;
+        minAlpha_ = new GridValue;
 
-        GridIndex gridIndices(mcp.getNumOfGrids());
+        GridIndex mainGridIndices(mcp.getNumOfGrids());
 
         do
         {
-            oldV_->insert(std::make_pair(gridIndices, initStateGuess));
-            minAlpha_->insert(std::make_pair(gridIndices, 0.0));
-        } while (gridIndices.nextGridElement(mcp));
-
-        std::copy(oldV_->begin(), oldV_->end(), newV_->begin());
+            GridIndex oldVGridIndices(mainGridIndices);
+            oldV_->insert(std::make_pair(oldVGridIndices, initStateGuess));
+            GridIndex newVGridIndices(mainGridIndices);
+            minAlpha_->insert(std::make_pair(newVGridIndices,initStateGuess));
+        } while (mainGridIndices.nextGridElement(mcp));
     }
 }
 
 bool MarkovChainApproximation::allStreamsOpen()
 {
-    for (auto&& oldVFile : oldVFile_)
+    for (auto&& oldVFile : *oldVFile_)
     {
         if (!oldVFile.stream->is_open())
         {
             return false;
         }
     }
-    for (auto&& newVFile : newVFile_)
+    for (auto&& newVFile : *newVFile_)
     {
         if (!newVFile.stream->is_open())
         {
             return false;
         }
     }
-    if (!minAlphaFile_.stream->is_open())
-    {
-        return false;
-    }
-
-    return true;
+    return minAlphaFile_.stream->is_open();
 }
 
 MarkovChainApproximation::~MarkovChainApproximation()
@@ -148,18 +143,16 @@ MarkovChainApproximation::~MarkovChainApproximation()
     else
     {
         // Close and remove files used for dynamic programming equations
-        for (auto it = oldVFile_.begin() ; it != oldVFile_.end(); ++it)
+        for (auto it = oldVFile_->begin() ; it != oldVFile_->end(); ++it)
         {
             it->deallocate();
-            delete (*it);
         }
-        oldVFile_.clear();
-        for (auto it = newVFile_.begin() ; it != newVFile_.end(); ++it)
+        oldVFile_->clear();
+        for (auto it = newVFile_->begin() ; it != newVFile_->end(); ++it)
         {
             it->deallocate();
-            delete (*it);
         }
-        newVFile_.clear();
+        newVFile_->clear();
 
         minAlphaFile_.deallocate();
     }
@@ -257,7 +250,8 @@ double MarkovChainApproximation::B_func(fcn2dep& driftFunction,
 
 void MarkovChainApproximation::solveTransitionProbabilities(std::vector<double>& v_probabilities,
                                                             GridIndex& gridIndices,
-                                                            double alpha, double den,
+                                                            double alpha,
+                                                            double den,
                                                             fcn2dep& driftFunction,
                                                             fcn1dep& diffFunction)
 {
@@ -271,7 +265,10 @@ void MarkovChainApproximation::solveTransitionProbabilities(std::vector<double>&
     // p[end][1] is unused
 
     // Determine 'y' -> the positions that this node can move to
-    vector<double[mcp_.getNumOfGrids()]> y(2);
+    vector<double*> y(2);
+    y[0] = new double[mcp_.getNumOfGrids()];
+    y[1] = new double[mcp_.getNumOfGrids()];
+
     for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
     {
         // One grid position moved up on the current dimension
@@ -281,7 +278,7 @@ void MarkovChainApproximation::solveTransitionProbabilities(std::vector<double>&
         GridIndex lowerGridIndex(gridIndices);
         lowerGridIndex.setGridIndexOfDim(ii, lowerGridIndex.getIndexOfDim(ii) - 1);
 
-        for (unsigned  jj = 0; jj < mcp_.getNumOfGrids(); ++jj)
+        for (uint jj = 0; jj < mcp_.getNumOfGrids(); ++jj)
         {
             if (ii == jj)
             {
@@ -321,6 +318,10 @@ void MarkovChainApproximation::solveTransitionProbabilities(std::vector<double>&
         }
     }
     v_probabilities[v_probabilities.size()-1] = p[p.size()-1]*(*oldV_)[gridIndices];
+
+    // Clear up memory allocated
+    delete y[0];
+    delete y[1];
 }
 
 

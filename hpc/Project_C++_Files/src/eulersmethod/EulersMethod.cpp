@@ -8,7 +8,16 @@
 EulersMethod::EulersMethod(GridParameters& epm)
     : epm_(epm)
 {
-    setUpSolution();
+    // Setup solution memory and insert initial guess
+    GridIndex mainGridIndices(epm_.getNumOfGrids());
+    solution_ = new GridValue;
+    mainGridIndices.resetToOrigin();
+
+    do
+    {
+        GridIndex newGridIndices(mainGridIndices);
+        solution_->insert(std::make_pair(newGridIndices, 0));
+    } while (mainGridIndices.nextGridElement(epm_));
 }
 
 EulersMethod::~EulersMethod()
@@ -102,18 +111,3 @@ void EulersMethod::recursiveSolve(uint currentGrid,
     }
 }
 
-void EulersMethod::setUpSolution()
-{
-    delete solution_;
-
-    // Setup solution memory and insert initial guess
-    GridIndex gridIndices(epm_.getNumOfGrids());
-    solution_ = new std::map<GridIndex, double>;
-    gridIndices.resetToOrigin();
-
-    do
-    {
-        solution_->insert(std::make_pair(gridIndices, 0));
-    } while (gridIndices.nextGridElement(epm_));
-
-}

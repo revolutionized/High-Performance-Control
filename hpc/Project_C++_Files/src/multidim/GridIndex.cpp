@@ -1,5 +1,6 @@
 //
 
+#include <cassert>
 #include "GridIndex.h"
 
 GridIndex::GridIndex(unsigned int numOfDimensions_)
@@ -41,22 +42,30 @@ bool GridIndex::recursionCount(unsigned int padding, unsigned int curDimension, 
 {
     if (curDimension > 0)
     {
-        if (gridIndices_[curDimension-1] < gp.getGridLength(curDimension) - padding - 1)
+        auto test = gp.getGridLength(curDimension);
+        if (gridIndices_[curDimension-1] < gp.getGridLength(curDimension-1) - padding - 1)
         {
             gridIndices_[curDimension-1]++;
         }
         else
         {
-            gridIndices_[curDimension] = padding;
+            gridIndices_[curDimension-1] = padding;
             curDimension--;
-            recursionCount(padding, curDimension, gp);
+            if (curDimension > 0)
+            {
+                recursionCount(padding, curDimension, gp);
+            }
+            else
+            {
+                return false;
+            }
         }
         return true;
     }
     return false;
 }
 
-unsigned int GridIndex::getIndexOfDim(unsigned int gridNum)
+unsigned int GridIndex::getIndexOfDim(unsigned int gridNum) const
 {
     return gridIndices_[gridNum];
 }
@@ -72,5 +81,15 @@ void GridIndex::setGridIndices(const unsigned int* gridIndices)
 void GridIndex::setGridIndexOfDim(unsigned int gridNum, unsigned int index)
 {
     gridIndices_[gridNum] = index;
+}
+
+unsigned int GridIndex::id() const
+{
+    unsigned int full_index = 0;
+    for (int ii = static_cast<int>(numOfDimensions_) - 1; ii >= 0; --ii)
+    {
+        full_index += (numOfDimensions_ - ii)*getIndexOfDim(static_cast<unsigned int>(ii));
+    }
+    return full_index;
 }
 

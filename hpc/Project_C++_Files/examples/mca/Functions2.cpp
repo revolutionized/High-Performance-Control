@@ -4,6 +4,11 @@
 
 #include "Functions2.h"
 
+// Globals
+int A = -2;
+int B = 1;
+int k = 1;
+
 double problemOde2(const double* x, const double u)
 {
     return driftFunction2(x,u) + diffFunction2(x);

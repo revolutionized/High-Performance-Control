@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <map>
 #include "GridParameters.h"
 
 class GridIndex
@@ -20,12 +21,13 @@ public:
 
     bool nextGridElement(GridParameters& gp, unsigned int padding = 0);
 
-    unsigned int getIndexOfDim(unsigned int gridNum);
+    unsigned int getIndexOfDim(unsigned int gridNum) const;
 
     void setGridIndices(const unsigned int* gridIndices);
 
     void setGridIndexOfDim(unsigned int gridNum, unsigned int index);
 
+    unsigned int id() const;
 private:
     bool recursionCount(unsigned int padding, unsigned int curDimension, GridParameters& gp);
     unsigned int numOfDimensions_;
@@ -33,4 +35,13 @@ private:
 
 };
 
+struct GridIndexCompare
+{
+    bool operator() (const GridIndex& lhs, const GridIndex& rhs) const
+    {
+        return lhs.id() < rhs.id();
+    }
+};
+
+typedef std::map<GridIndex, double, GridIndexCompare> GridValue;
 

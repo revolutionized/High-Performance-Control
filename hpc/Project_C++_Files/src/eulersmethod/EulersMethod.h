@@ -38,12 +38,10 @@ public:
 
 private:
 
-    void setUpSolution();
-
 
     // FIELDS --------------------------------------------------------------------------------------------------- FIELDS
 
-    std::map<GridIndex, double>* solution_ = nullptr;
+    GridValue* solution_ = nullptr;
     GridParameters epm_;
 
     void recursiveSolve(uint currentGrid,
@@ -56,6 +54,8 @@ private:
                         GridIndex& previousIndices,
                         fcn2dep& fcnDerivative,
                         MarkovChainApproximation& mca);
+
+    void test();
 };
 
 

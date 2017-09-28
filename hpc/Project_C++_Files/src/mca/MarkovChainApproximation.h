@@ -14,7 +14,6 @@
 typedef const std::function<double(double*, double)> fcn2dep;
 typedef const std::function<double(double*)> fcn1dep;
 
-
 class MarkovChainApproximation
 {
 public:
@@ -143,7 +142,10 @@ private:
     {
         std::fstream* stream = nullptr;
         std::string filename;
-        ~file() { stream->close(); }
+        ~file()
+        {
+            deallocate();
+        }
 
         void deallocate()
         {
@@ -155,8 +157,8 @@ private:
             }
         }
     };
-    std::vector<file> oldVFile_;
-    std::vector<file> newVFile_;
+    std::vector<file>* oldVFile_;
+    std::vector<file>* newVFile_;
     file minAlphaFile_;
 
     bool memoryModeRAM_ = false;
@@ -164,14 +166,11 @@ private:
     MarkovChainParameters mcp_;
 
     /// The last iterations values of the dynamic programming equation at each grid index
-    std::map<GridIndex, double>* oldV_ = nullptr;
-//    std::vector<std::vector<double>*>* oldV_ = nullptr;
+    GridValue* oldV_ = nullptr;
     /// The current iterations values of the dynamic programming equation at each grid index
-    std::map<GridIndex, double>* newV_ = nullptr;
-//    std::vector<std::vector<double>*>* newV_ = nullptr;
+    GridValue* newV_ = nullptr;
     /// The values for the optimal alpha (or control parameter) for each index along the grid is stored in this vector
-    std::map<GridIndex, double>* minAlpha_ = nullptr;
-//    std::vector<std::vector<double>*>* minAlpha_ = nullptr;
+    GridValue* minAlpha_ = nullptr;
 
 };
 

@@ -169,7 +169,7 @@ int main()
 
     // Plot the data using gnuplot ------------------------------------------------------ //
     // The following command just requests to run a shell script with the commands in the file ../viewplots.gla
-//    system("cd .. && ./viewplots.gla");
+    system("cd .. && ./viewplots.gla");
 
     // Finished with no errors ---------------------------------------------------------- //
     cout << " ~~~ Finished executing ~~~ ";

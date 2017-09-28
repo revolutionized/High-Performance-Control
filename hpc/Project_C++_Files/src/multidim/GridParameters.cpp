@@ -45,13 +45,23 @@ GridParameters::GridParameters(const double* gridLeftBound,
     }
 }
 
+GridParameters::GridParameters(const GridParameters& gp) : numOfGridDimensions_(numOfGridDimensions_)
+{
+    for (int ii = 0; ii < numOfGridDimensions_; ++ii)
+    {
+        deltaGrid_[ii] = gp.deltaGrid_[ii];
+        gridLength_[ii] = gp.gridLength_[ii];
+        gridLeftBound_[ii] = gp.gridLeftBound_[ii];
+    }
+}
+
+
 GridParameters::~GridParameters()
 {
     delete gridLeftBound_;
     delete gridLength_;
     delete deltaGrid_;
 }
-
 
 // GETTERS ------------------------------------------------------------------------ GETTERS //
 
@@ -73,11 +83,11 @@ unsigned int GridParameters::getGridLength(unsigned int gridIndex)
     return gridLength_[gridIndex];
 }
 
+
 double GridParameters::getDeltaGrid(unsigned int gridIndex)
 {
     return deltaGrid_[gridIndex];
 }
-
 
 // PRIVATE METHODS -------------------------------------------------------- PRIVATE METHODS //
 
@@ -85,16 +95,12 @@ void GridParameters::assertParameters(const double* gridLeftBound,
                                        const double* gridRightBound,
                                        const uint* gridLength)
 {
-    // First we check that both grid bound arrays and grid length are all of the same array size
-    if (gridLeftBound[numOfGridDimensions_-1] == nullptr
-        || gridRightBound[numOfGridDimensions_-1] == nullptr
-        || gridLength[numOfGridDimensions_-1] == nullptr)
-    {
-        assert(false);
-    }
-
     // Now we ensure appropriate bounds have been given
-    assert(gridLeftBound < gridRightBound);
+    for (int ii = 0; ii < numOfGridDimensions_; ++ii)
+    {
+        assert(gridLeftBound[ii] < gridRightBound[ii]);
+
+    }
 
     // Now we ensure appropriate grid lengths have been given
     for (int ii = 0; ii < numOfGridDimensions_; ++ii)
@@ -107,16 +113,12 @@ void GridParameters::assertParameters(const double* gridLeftBound,
                                        const double* gridRightBound,
                                        const double* deltaGrid)
 {
-    // First we check that both grid bound arrays and grid length are all of the same array size
-    if (gridLeftBound[numOfGridDimensions_-1] == nullptr
-        || gridRightBound[numOfGridDimensions_-1] == nullptr
-        || deltaGrid[numOfGridDimensions_-1] == nullptr)
-    {
-        assert(false);
-    }
-
     // Now we ensure appropriate bounds have been given
-    assert(gridLeftBound < gridRightBound);
+    for (int ii = 0; ii < numOfGridDimensions_; ++ii)
+    {
+        assert(gridLeftBound[ii] < gridRightBound[ii]);
+
+    }
 
     // Now we ensure appropriate grid lengths have been given
     for (int ii = 0; ii < numOfGridDimensions_; ++ii)

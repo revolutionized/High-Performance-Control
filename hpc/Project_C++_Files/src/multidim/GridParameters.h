@@ -19,6 +19,8 @@ public:
                     const double* deltaGrid,
                     unsigned int dimensions);
 
+    GridParameters(const GridParameters& gp);
+
     virtual ~GridParameters();
 
     // GETTERS ------------------------------------------------------------------------------------------------- GETTERS
