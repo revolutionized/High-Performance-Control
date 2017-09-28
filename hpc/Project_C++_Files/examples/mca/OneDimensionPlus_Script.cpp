@@ -13,7 +13,7 @@
 
 #include "Functions2.h"
 #include "mca/MarkovChainApproximation.h"
-#include "eulersmethod/EulerParameters.h"
+#include "multidim/GridParameters.h"
 #include "eulersmethod/EulersMethod.h"
 
 using std::cout;
@@ -35,7 +35,7 @@ int main()
     const double gridRightBound[1] = {exitingBound};
     unsigned int gridLength[1] = {euler_grid_size};
     unsigned int dimensions = 1;
-    EulerParameters epm(gridLeftBound, gridRightBound, gridLength, dimensions);
+    GridParameters epm(gridLeftBound, gridRightBound, gridLength, dimensions);
 
     // Here we create a std::function for the ODE derivative. This is made from the problem ODE given in "functions.h"
     // and matched with the exact minimum control value needed for optimal control (that is the analytical exact value)
@@ -63,21 +63,17 @@ int main()
     exactEulerFileStream.close();
 
     // Also create file with the optimal control
-    ofstream exactControLFileStream;
-    exactControLFileStream.open("ExactControl.dat", std::ofstream::out);
-    exactControLFileStream.precision(4);
+    ofstream exactControlFileStream;
+    exactControlFileStream.open("ExactControl.dat", std::ofstream::out);
+    exactControlFileStream.precision(4);
     std::scientific;
-    if (exactControLFileStream.good())
+    if (exactControlFileStream.good())
     {
-        exactControLFileStream << "t u" << NEWL;
-        euler->saveGrid(exactControLFileStream);
+        exactControlFileStream << "t u" << NEWL;
 
-        // Only the grid has been saved, need to add the minimum control for that point
-        uint gridIndices[epm.getNumOfGrids()];
-        for (int ii = 0; ii < epm.getNumOfGrids(); ++ii)
-        {
-            gridIndices[ii] = 0;
-        }
+        // Need to add the minimum control for each point of grid
+        GridIndex gridIndices(epm.getNumOfGrids());
+        gridIndices.resetToOrigin();
         double gridLocation[epm.getNumOfGrids()];
 
         // Fill each grid point
@@ -85,15 +81,15 @@ int main()
         {
             for (uint ii = 0; ii < epm.getNumOfGrids(); ++ii)
             {
-                exactControLFileStream << epm.getGridAtIndex(gridIndices[ii], ii) << " ";
+                gridLocation[ii] = epm.getGridAtIndex(gridIndices.getIndexOfDim(ii), ii);
+                exactControlFileStream << gridLocation[ii] << " ";
             }
 
-            epm.getGridAtIndex(gridIndices, gridLocation);
-            exactControLFileStream << fcnExactControl(gridLocation) << NEWL;
-        } while (euler->nextRecursiveGrid(gridIndices, nullptr, 0));
+            exactControlFileStream << fcnExactControl(gridLocation) << NEWL;
+        } while (gridIndices.nextGridElement(epm));
 
     }
-    exactControLFileStream.close();
+    exactControlFileStream.close();
 
     // We delete the memory since the solution may take up a lot of space and we want to reuse Euler's method
     delete euler;
@@ -142,20 +138,15 @@ int main()
     exactEulerFileStream.close();
 
     // Also create file with MCA optimal control data
-    ofstream markovControlFile;
-    markovControlFile.open("MarkovControl.dat", std::ofstream::out);
-    if (markovControlFile.good())
+    ofstream markovControlFileStream;
+    markovControlFileStream.open("MarkovControl.dat", std::ofstream::out);
+    if (markovControlFileStream.good())
     {
-        markovControlFile << "t u" << NEWL;
-        euler->saveGrid(markovControlFile);
+        markovControlFileStream << "t u" << NEWL;
 
-        // Only the grid has been saved, need to add the minimum control for that point
-
-        uint gridIndices[epm.getNumOfGrids()];
-        for (int ii = 0; ii < epm.getNumOfGrids(); ++ii)
-        {
-            gridIndices[ii] = 0;
-        }
+        // Need to add the minimum control for each point of grid
+        GridIndex gridIndices(epm.getNumOfGrids());
+        gridIndices.resetToOrigin();
         double gridLocation[epm.getNumOfGrids()];
 
         // Fill each grid point
@@ -163,15 +154,15 @@ int main()
         {
             for (uint ii = 0; ii < epm.getNumOfGrids(); ++ii)
             {
-                markovControlFile << epm.getGridAtIndex(gridIndices[ii], ii) << " ";
+                gridLocation[ii] = epm.getGridAtIndex(gridIndices.getIndexOfDim(ii), ii);
+                markovControlFileStream << gridLocation[ii] << " ";
             }
 
-            epm.getGridAtIndex(gridIndices, gridLocation);
-            markovControlFile << markovCA.getMarkovControlFunction(gridLocation) << NEWL;
-        } while (euler->nextRecursiveGrid(gridIndices, nullptr, 0));
+            markovControlFileStream << markovCA.getMarkovControlFunction(gridLocation) << NEWL;
+        } while (gridIndices.nextGridElement(epm));
 
     }
-    exactControLFileStream.close();
+    markovControlFileStream.close();
 
     // And clear the memory
     delete euler;

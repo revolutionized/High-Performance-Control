@@ -14,6 +14,7 @@
 typedef const std::function<double(double*, double)> fcn2dep;
 typedef const std::function<double(double*)> fcn1dep;
 
+
 class MarkovChainApproximation
 {
 public:
@@ -98,8 +99,7 @@ private:
     /// \param den Denominator $ \sigma(x)^2 + hB(x) $
     /// \param diffFunction Same sigma function given at the computeMarkovApproximation call
     double transitionProb(double* x,
-                          unsigned int currentGridIndex,
-                          double y,
+                          bool upperJump,
                           double alpha,
                           double den,
                           fcn2dep& driftFunction,
@@ -131,7 +131,7 @@ private:
 
     /// \brief Searches and finds the index of the grid array that most closely matches with the value of x given
     /// \param gridLocation Can be anything, but for proper use should be between the lower and upper bounds of the grid
-    void getGridIndicesClosestTo(double* gridLocation, uint* closestGridIndex);
+    GridIndex getGridIndicesClosestTo(double* gridLocation);
 
     bool allStreamsOpen();
 

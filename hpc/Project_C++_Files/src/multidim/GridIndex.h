@@ -18,13 +18,13 @@ public:
 
     void resetToOrigin(unsigned int padding = 0);
 
-    bool nextGridElement(unsigned int padding, GridParameters& gp);
+    bool nextGridElement(GridParameters& gp, unsigned int padding = 0);
 
     unsigned int getIndexOfDim(unsigned int gridNum);
 
     void setGridIndices(const unsigned int* gridIndices);
 
-    void setGridIndexOfDum(unsigned int gridNum, unsigned int index);
+    void setGridIndexOfDim(unsigned int gridNum, unsigned int index);
 
 private:
     bool recursionCount(unsigned int padding, unsigned int curDimension, GridParameters& gp);

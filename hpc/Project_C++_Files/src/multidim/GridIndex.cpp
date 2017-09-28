@@ -32,7 +32,7 @@ void GridIndex::resetToOrigin(unsigned int padding)
     }
 }
 
-bool GridIndex::nextGridElement(unsigned int padding, GridParameters& gp)
+bool GridIndex::nextGridElement(GridParameters& gp, unsigned int padding)
 {
     return recursionCount(padding, numOfDimensions_, gp);
 }
@@ -69,7 +69,7 @@ void GridIndex::setGridIndices(const unsigned int* gridIndices)
     }
 }
 
-void GridIndex::setGridIndexOfDum(unsigned int gridNum, unsigned int index)
+void GridIndex::setGridIndexOfDim(unsigned int gridNum, unsigned int index)
 {
     gridIndices_[gridNum] = index;
 }

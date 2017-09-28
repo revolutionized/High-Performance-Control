@@ -63,14 +63,6 @@ double GridParameters::getGridAtIndex(unsigned int index, unsigned int gridNum)
     return gridPosition;
 }
 
-void GridParameters::getGridAtIndex(unsigned int* index, double* outGrid)
-{
-    for (unsigned int ii = 0; ii < numOfGridDimensions_; ++ii)
-    {
-        outGrid[ii] = getGridAtIndex(index[ii], ii);
-    }
-}
-
 unsigned int GridParameters::getNumOfGrids()
 {
     return numOfGridDimensions_;

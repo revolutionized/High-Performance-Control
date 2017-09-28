@@ -31,8 +31,6 @@ public:
     /// \param index The index along the grid array. Must be >= 0 and less than the total length of the grid array.
     double getGridAtIndex(unsigned int index, unsigned int gridNum);
 
-    void getGridAtIndex(unsigned int* index, double* outGrid);
-
     unsigned int getNumOfGrids();
 
     unsigned int getGridLength(unsigned int gridIndex);

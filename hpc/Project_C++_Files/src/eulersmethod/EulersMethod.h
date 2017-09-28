@@ -5,7 +5,7 @@
 #pragma once
 
 #include <functional>
-#include "EulerParameters.h"
+#include "multidim/GridParameters.h"
 #include "mca/MarkovChainApproximation.h"
 
 #ifdef _WIN32
@@ -24,7 +24,7 @@ class EulersMethod
 public:
     // METHODS ------------------------------------------------------------------------------------------------- METHODS
 
-    explicit EulersMethod(EulerParameters& epm);
+    explicit EulersMethod(GridParameters& epm);
 
     ~EulersMethod();
 
@@ -36,32 +36,25 @@ public:
 
     void saveSolution(std::ofstream& stream);
 
-    void saveGrid(std::ofstream& stream);
-
-    bool nextRecursiveGrid(uint* currentIndices, uint* previousIndices, uint padding);
 private:
 
-    // METHODS ------------------------------------------------------------------------------------------------- METHODS
-    void resetIndices(uint* currentIndices, uint padding);
-    unsigned int getSolutionIndexRelative(const uint* gridIndices);
     void setUpSolution();
-    unsigned int recursionCount(uint dimIndex,
-                                uint* indices,
-                                uint padding,
-                                bool& stillInGrid);
 
 
     // FIELDS --------------------------------------------------------------------------------------------------- FIELDS
 
-    std::map<unsigned int[], double>* solution_ = nullptr;
-    EulerParameters epm_;
+    std::map<GridIndex, double>* solution_ = nullptr;
+    GridParameters epm_;
 
     void recursiveSolve(uint currentGrid,
-                        uint* gridIndices,
-                        uint* previousIndices,
+                        GridIndex& gridIndices,
+                        GridIndex& previousIndices,
                         fcn1dep& fcnDerivative);
 
-    void recursiveSolve(uint currentGrid, uint* gridIndices, uint* previousIndices, fcn2dep& fcnDerivative,
+    void recursiveSolve(uint currentGrid,
+                        GridIndex& gridIndices,
+                        GridIndex& previousIndices,
+                        fcn2dep& fcnDerivative,
                         MarkovChainApproximation& mca);
 };
 

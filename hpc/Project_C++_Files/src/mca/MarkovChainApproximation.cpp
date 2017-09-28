@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <iostream>
 #include <iomanip>
-#include "multidim/GridIndex.h"
+#include <cmath>
 
 using std::cout;
 using std::endl;
@@ -91,7 +91,7 @@ MarkovChainApproximation::MarkovChainApproximation(MarkovChainParameters& mcp,
         {
             oldV_->insert(std::make_pair(gridIndices, initStateGuess));
             minAlpha_->insert(std::make_pair(gridIndices, 0.0));
-        } while (gridIndices.nextGridElement(0, mcp));
+        } while (gridIndices.nextGridElement(mcp));
 
         std::copy(oldV_->begin(), oldV_->end(), newV_->begin());
     }
@@ -196,7 +196,7 @@ void MarkovChainApproximation::computeMarkovApproximation(fcn2dep& costFunction,
                 // Find the minimum alpha term for the DPE
                 determineMinimumAlpha(v_summed, gridIndices);
 
-            } while (gridIndices.nextGridElement(0, mcp_));
+            } while (gridIndices.nextGridElement(mcp_, 1));
             
             relErr = getRelativeError();
             
@@ -271,59 +271,61 @@ void MarkovChainApproximation::solveTransitionProbabilities(std::vector<double>&
     // p[end][1] is unused
 
     // Determine 'y' -> the positions that this node can move to
-    vector<double[mcp_.getNumOfGrids()]> y(p.size());
+    vector<double[mcp_.getNumOfGrids()]> y(2);
     for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
     {
-        uint yi = ii*2;
-
+        // One grid position moved up on the current dimension
         GridIndex upperGridIndex(gridIndices);
+        upperGridIndex.setGridIndexOfDim(ii, upperGridIndex.getIndexOfDim(ii) + 1);
+        // One grid position moved down on the current dimension
         GridIndex lowerGridIndex(gridIndices);
+        lowerGridIndex.setGridIndexOfDim(ii, lowerGridIndex.getIndexOfDim(ii) - 1);
+
         for (unsigned  jj = 0; jj < mcp_.getNumOfGrids(); ++jj)
         {
             if (ii == jj)
             {
                 continue;
             }
-            y[yi][jj] = mcp_.getGridAtIndex(gridIndices.getIndexOfDim(jj), jj);
+            y[0][jj] = mcp_.getGridAtIndex(gridIndices.getIndexOfDim(jj), jj);
+            y[1][jj] = mcp_.getGridAtIndex(gridIndices.getIndexOfDim(jj), jj);
         }
+        y[0][ii] = mcp_.getGridAtIndex(upperGridIndex.getIndexOfDim(ii), ii) - mcp_.getH();
+        y[1][ii] = mcp_.getGridAtIndex(lowerGridIndex.getIndexOfDim(ii), ii) + mcp_.getH();
 
-        y[yi][ii] = mcp_.getGridAtIndex(gridIndices.getIndexOfDim(ii) - 1, ii) - mcp_.getH();
-        y[yi+1][ii] = mcp_.getGridAtIndex(gridIndices.getIndexOfDim(ii) + 1, ii) + mcp_.getH();
 
+        // Need to match the y with same value/position in the old dynamic equation
+        uint yi = ii*2;
 
         // Now use the values of y to determine transition probabilities (for both the negative and positve part
-        p[ii] = transitionProb(y[yi], yi, y[yi][yi] ,alpha, den, driftFunction, diffFunction);
-        p[ii+1] = transitionProb(y[yi], yi, y[yi+1][yi], alpha, den, driftFunction, diffFunction);
+        p[yi] = transitionProb(y[0], true, alpha, den, driftFunction, diffFunction);
+        p[yi+1] = transitionProb(y[1], false, alpha, den, driftFunction, diffFunction);
 
-        // Need to match y iteration to the same x iteration value
-        upperGridIndex[yi] += 1;
-        lowerGridIndex[yi] -= 1;
-
+        // Calculate probability based on old dynamic equation values at that grid position
         v_probabilities[yi] = p[yi]*(*oldV_)[upperGridIndex];
-        v_probabilities[yi] += p[yi+1]*(*oldV_)[lowerGridIndex];
+        v_probabilities[yi+1] = p[yi+1]*(*oldV_)[lowerGridIndex];
     }
     // Get probability of staying and not moving (complement to moving)
     for (unsigned ii = 0; ii < mcp_.getNumOfGrids(); ii++)
     {
-        y[y.size()-1][ii] = mcp_.getGridAtIndex(gridIndices[ii], ii);
         p[p.size()-1] = 1;
         for (uint jj = 0; jj < p.size() - 1; ++jj)
         {
             p[p.size()-1] -= p[jj];
         }
-    }
 
-    // TODO: Remove this if no problems occur, this is just for error checking
-    if (p[p.size()-1] < 0)
-    {
-        cout << "ERROR: Remaining probability less than 0" << endl;
+        // TODO: Remove this if no problems occur, this is just for error checking
+        if (p[p.size()-1] < 0)
+        {
+            cout << "ERROR: Remaining probability less than 0" << endl;
+        }
     }
+    v_probabilities[v_probabilities.size()-1] = p[p.size()-1]*(*oldV_)[gridIndices];
 }
 
 
 double MarkovChainApproximation::transitionProb(double* x,
-                                                uint currentGridIndex,
-                                                double y,
+                                                bool upperJump,
                                                 double alpha,
                                                 double den,
                                                 fcn2dep& driftFunction,
@@ -332,7 +334,7 @@ double MarkovChainApproximation::transitionProb(double* x,
     double num = pow(diffFunction(x), 2.0);
     double b_part = driftFunction(x, alpha);
 
-    if (y > x[currentGridIndex])
+    if (upperJump)
     {
         b_part = b_part > 0 ? b_part : 0;
     } else
@@ -387,90 +389,56 @@ void MarkovChainApproximation::determineMinimumAlpha(const vector<double>& v_sum
     (*minAlpha_)[gridIndices] = mcp_.getAlphaAtIndex(minIndex);
 }
 
-bool MarkovChainApproximation::nextRecursiveGrid(uint* currentIndices, uint padding)
-{
-    bool stillInGrid = true;
-    recursionCount(mcp_.getNumOfGrids() - 1, currentIndices, padding, stillInGrid);
-    return stillInGrid;
-}
-
-uint MarkovChainApproximation::recursionCount(uint dimIndex,
-                                               uint* indices,
-                                               uint padding, 
-                                               bool& stillInGrid)
-{
-    if (dimIndex >= 0)
-    {
-        if (indices[dimIndex] < mcp_.getGridLength(dimIndex) - padding - 1)
-        {
-            indices[dimIndex]++;
-        }
-        else
-        {
-            indices[dimIndex] = padding;
-            dimIndex--;
-            recursionCount(dimIndex, indices, padding, stillInGrid);
-        }
-    }
-    else 
-    {
-        stillInGrid = false;
-    }
-}
-
 double MarkovChainApproximation::getRelativeError()
 {
-    double temp;
-    double maxValue = 0.0;
+    double temp = 0.0;
 
-    unsigned int gridIndices[mcp_.getNumOfGrids()];
-    resetIndices(gridIndices, 0);
+    GridIndex gridIndices(mcp_.getNumOfGrids());
+    gridIndices.resetToOrigin();
     
     do
     {
-        // Perform infinity norm
-        temp = (*oldV_)[gridIndices] - (*newV_)[gridIndices];
-        if (fabs(temp) > maxValue)
-        {
-            maxValue = fabs(temp);
-        }
-    } while (nextRecursiveGrid(gridIndices, 0));
+        // Perform Frobenius tensor norm
+        temp += pow(fabs((*oldV_)[gridIndices]) - fabs((*newV_)[gridIndices]), 2.0);
+    } while (gridIndices.nextGridElement(mcp_));
         
-    return maxValue;
+    return sqrt(temp);
 }
 
 double MarkovChainApproximation::getMarkovControlFunction(double* gridLocation)
 {
-    uint closestGridIndices[mcp_.getNumOfGrids()];
-    getGridIndicesClosestTo(gridLocation, closestGridIndices);
-    return (*minAlpha_)[closestGridIndices];
+    return (*minAlpha_)[getGridIndicesClosestTo(gridLocation)];
 }
 
-void MarkovChainApproximation::getGridIndicesClosestTo(double* gridLocation, uint* closestGridIndex)
+GridIndex MarkovChainApproximation::getGridIndicesClosestTo(double* gridLocation)
 {
     // Set initial guess to the origin
-    uint currentGridIndex[mcp_.getNumOfGrids()];
-    resetIndices(currentGridIndex, 0);
-    for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
-    {
-        closestGridIndex[ii] = currentGridIndex[ii];
-    }
+    GridIndex currentGridIndex(mcp_.getNumOfGrids());
+    currentGridIndex.resetToOrigin();
+    GridIndex closestGridIndex(currentGridIndex);
 
     double minDistance = 0;
     for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
     {
-        minDistance += pow(mcp_.getDeltaGrid(ii)*1.5, 2.0);
+        minDistance += pow(mcp_.getDeltaGrid(ii) * 1.5, 2.0);
     }
     minDistance = sqrt(minDistance);
 
+    // Basically we do a relative distance check between each point (just using Pythagoras theorem)
     do
     {
         double currentGridLoc[mcp_.getNumOfGrids()];
-        mcp_.getGridAtIndex(currentGridIndex, currentGridLoc);
         double currentDistance = 0;
         for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
         {
-            currentDistance += pow(currentGridLoc[ii] - gridLocation[ii], 2.0);
+            currentGridLoc[ii] = mcp_.getGridAtIndex(currentGridIndex.getIndexOfDim(ii), ii);
+            if (currentGridLoc[ii] > 0 && gridLocation[ii] < 0)
+            {
+                currentDistance += pow(gridLocation[ii] - currentGridLoc[ii], 2.0);
+            } else
+            {
+                currentDistance += pow(currentGridLoc[ii] - gridLocation[ii], 2.0);
+            }
         }
         currentDistance = sqrt(currentDistance);
 
@@ -478,10 +446,12 @@ void MarkovChainApproximation::getGridIndicesClosestTo(double* gridLocation, uin
         {
             for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
             {
-                closestGridIndex[ii] = currentGridIndex[ii];
+                closestGridIndex.setGridIndexOfDim(ii, currentGridIndex.getIndexOfDim(ii));
             }
             minDistance = currentDistance;
         }
 
-    } while (nextRecursiveGrid(currentGridIndex, 0));
+    } while (currentGridIndex.nextGridElement(mcp_));
+
+    return closestGridIndex;
 }
