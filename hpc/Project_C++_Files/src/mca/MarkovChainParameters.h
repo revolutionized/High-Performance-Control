@@ -50,9 +50,16 @@ struct MarkovChainParameters : public GridParameters
     /// \param h This is the level of detail that the Markov Approximation considers (for convergence we want h <
     /// grid spacing (delta x)
     /// \param initGuess The initial guess for the value of the function we are approximating (at x = 0)
-    MarkovChainParameters(const double* gridLeftBound, const double* gridRightBound,
-                          const double* deltaGrid, double alphaLeftBound, double alphaRightBound,
-                          double deltaAlpha, double h, unsigned int dimensions);
+    MarkovChainParameters(const double* gridLeftBound,
+                          const double* gridRightBound,
+                          const double* deltaGrid,
+                          double alphaLeftBound,
+                          double alphaRightBound,
+                          double deltaAlpha,
+                          double h,
+                          unsigned int dimensions);
+
+    MarkovChainParameters(const MarkovChainParameters& mcp);
 
 
     // SETTERS ------------------------------------------------------------------------------------------------- SETTERS
@@ -78,7 +85,6 @@ struct MarkovChainParameters : public GridParameters
     double getRelativeError();
 
     double getH();
-
 private:
     // FIELDS --------------------------------------------------------------------------------------------------- FIELDS
 

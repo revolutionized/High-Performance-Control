@@ -45,8 +45,12 @@ GridParameters::GridParameters(const double* gridLeftBound,
     }
 }
 
-GridParameters::GridParameters(const GridParameters& gp) : numOfGridDimensions_(numOfGridDimensions_)
+GridParameters::GridParameters(const GridParameters& gp)
+        : numOfGridDimensions_(gp.numOfGridDimensions_)
 {
+    deltaGrid_ = new double[numOfGridDimensions_];
+    gridLeftBound_ = new double[numOfGridDimensions_];
+    gridLength_ = new uint[numOfGridDimensions_];
     for (int ii = 0; ii < numOfGridDimensions_; ++ii)
     {
         deltaGrid_[ii] = gp.deltaGrid_[ii];

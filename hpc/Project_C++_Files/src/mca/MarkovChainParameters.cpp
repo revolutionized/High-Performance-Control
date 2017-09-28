@@ -51,6 +51,14 @@ MarkovChainParameters::MarkovChainParameters(const double* gridLeftBound,
 }
 
 
+MarkovChainParameters::MarkovChainParameters(const MarkovChainParameters& mcp)
+        : GridParameters(static_cast<GridParameters>(mcp)),
+          h_(mcp.h_),
+          alphaLeftBound_(mcp.alphaLeftBound_),
+          alphaLength_(mcp.alphaLength_),
+          deltaAlpha_(mcp.deltaAlpha_)
+{}
+
 // SETTERS ------------------------------------------------------------------------------------------------- SETTERS
 
 void MarkovChainParameters::setMaxIterations(uint maxIters)
@@ -58,11 +66,11 @@ void MarkovChainParameters::setMaxIterations(uint maxIters)
     maxIterations_ = maxIters;
 }
 
+
 void MarkovChainParameters::setMinError(double epsErr)
 {
     epsErr_ = epsErr;
 }
-
 
 // GETTERS ------------------------------------------------------------------------ GETTERS //
 
