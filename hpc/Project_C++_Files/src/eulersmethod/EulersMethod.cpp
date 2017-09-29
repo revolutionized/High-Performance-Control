@@ -1,113 +1,128 @@
 //
-// Created by David on 26/09/2017.
-//
 
 #include "EulersMethod.h"
+#include <cmath>
+#include <iostream>
 
-
-EulersMethod::EulersMethod(GridParameters& epm)
-    : epm_(epm)
+EulersMethod::EulersMethod(double timeLeftBound,
+                           double timeRightBound,
+                           double deltaTime,
+                           unsigned int dimensions)
+    : timeLeftBound_(timeLeftBound),
+      deltaTime_(deltaTime),
+      dimensions_(dimensions)
 {
-    // Setup solution memory and insert initial guess
-    GridIndex mainGridIndices(epm_.getNumOfGrids());
-    solution_ = new GridValue;
-    mainGridIndices.resetToOrigin();
+    assert(timeRightBound > timeLeftBound && timeLength > 0 && dimensions > 0);
+    timeLength_ = static_cast<uint>(floor((timeRightBound - timeLeftBound)/deltaTime));
 
-    do
-    {
-        GridIndex newGridIndices(mainGridIndices);
-        solution_->insert(std::make_pair(newGridIndices, 0));
-    } while (mainGridIndices.nextGridElement(epm_));
+    setupSolution();
+}
+
+EulersMethod::EulersMethod(double timeLeftBound,
+                           double timeRightBound,
+                           unsigned int timeLength,
+                           unsigned int dimensions)
+        : timeLeftBound_(timeLeftBound),
+          timeLength_(timeLength),
+          dimensions_(dimensions)
+{
+    assert(timeRightBound > timeLeftBound && timeLength > 0 && dimensions > 0);
+    deltaTime_ = (timeRightBound - timeLeftBound) / (timeLength - 1);
+
+    setupSolution();
 }
 
 EulersMethod::~EulersMethod()
 {
+    for (auto& it : *solution_)
+    {
+        delete it;
+    }
     delete solution_;
 }
 
-void EulersMethod::solve(fcn1dep& fcnDerivative, double initGuess)
+template <typename double>
+void EulersMethod::solve(fcn2dep& fcnDerivative,
+                         double* initGuess,
+                         MarkovChainApproximation* mca)
 {
-    GridIndex gridIndices(epm_.getNumOfGrids());
-    gridIndices.resetToOrigin();
-    GridIndex previousGridIndices(gridIndices);
-
-    (*solution_)[gridIndices] = initGuess;
-
-    for (uint ii = 0; ii < epm_.getNumOfGrids(); ++ii)
+    for (unsigned int ii = 0; ii < dimensions_; ++ii)
     {
-        recursiveSolve(ii, gridIndices, previousGridIndices, fcnDerivative);
+        (*solution_)[0][ii] = initGuess[ii];
+    }
+
+    for (unsigned int ii = 1; ii < timeLength_; ++ii)
+    {
+        // Solve derivative
+        double* xDash;
+        if (mca != nullptr)
+        {
+            xDash = fcnDerivative((*solution_)[ii-1], mca->getMarkovControlFunction((*solution_)[ii-1]));
+        }
+        else
+        {
+            xDash = fcnDerivative((*solution_)[ii-1], 0);
+        }
+
+        // Add derivative by deltaTime to the previous solution
+        for (int jj = 0; jj < dimensions_; ++jj)
+        {
+            (*solution_)[ii][jj] = (*solution_)[ii-1][jj] + xDash[jj]*deltaTime_;
+        }
+
+        // Since each of the functionDerivatives return a pointer we need to deallocate that pointer here
+        delete xDash;
+
+        // Print progress to screen
+        printProgress(static_cast<float>(ii/(timeLength_-1)));
     }
 }
-
-void EulersMethod::solve(fcn2dep& fcnDerivative, MarkovChainApproximation& mca, double initGuess)
-{
-    GridIndex gridIndices(epm_.getNumOfGrids());
-    gridIndices.resetToOrigin();
-    GridIndex previousGridIndices(gridIndices);
-
-    (*solution_)[gridIndices] = initGuess;
-
-    for (uint ii = 0; ii < epm_.getNumOfGrids(); ++ii)
-    {
-        recursiveSolve(ii, gridIndices, previousGridIndices, fcnDerivative, mca);
-    }
-}
-
 
 void EulersMethod::saveSolution(std::ofstream& stream)
 {
-    GridIndex gridIndices(epm_.getNumOfGrids());
-    gridIndices.resetToOrigin();
-
-    // Fill solution at each point of the grid
-    do
+    for (auto& sol : *solution_)
     {
-        for (uint ii = 0; ii < epm_.getNumOfGrids(); ++ii)
+        for (int jj = 0; jj < dimensions_; jj++)
         {
-            stream << epm_.getGridAtIndex(gridIndices.getIndexOfDim(ii), ii) << " ";
+            stream << sol[jj] << " ";
         }
-        stream << (*solution_)[gridIndices] << NEWL;
-    } while (gridIndices.nextGridElement(epm_));
+        stream << NEWL;
+    }
 }
 
 
 // PRIVATE METHODS -------------------------------------------------------- PRIVATE METHODS //
 
-void EulersMethod::recursiveSolve(uint currentGrid,
-                                  GridIndex& gridIndices,
-                                  GridIndex& previousIndices,
-                                  fcn1dep& fcnDerivative)
+void EulersMethod::setupSolution()
 {
-    for (unsigned int jj = currentGrid; jj < epm_.getGridLength(currentGrid); ++jj)
+    // Setup solution memory and insert initial guess
+    solution_ = new std::vector<double*>(timeLength_);
+    for (auto& ii : *solution_)
     {
-        recursiveSolve(currentGrid+1, gridIndices, previousIndices, fcnDerivative);
-        double gridLocation[epm_.getNumOfGrids()];
-        for (uint kk = 0; kk < epm_.getNumOfGrids(); ++kk)
-        {
-            gridLocation[kk] = epm_.getGridAtIndex(gridIndices.getIndexOfDim(kk), kk);
-        }
-        double df = fcnDerivative(gridLocation);
-        (*solution_)[gridIndices] = (*solution_)[previousIndices] + epm_.getDeltaGrid(currentGrid)*df;
+        ii = new double[dimensions_];
     }
 }
 
-
-void EulersMethod::recursiveSolve(uint currentGrid,
-                                  GridIndex& gridIndices,
-                                  GridIndex& previousIndices,
-                                  fcn2dep& fcnDerivative,
-                                  MarkovChainApproximation& mca)
+void EulersMethod::printProgress(float progress)
 {
-    for (unsigned int jj = currentGrid; jj < epm_.getGridLength(currentGrid); ++jj)
-    {
-        recursiveSolve(currentGrid+1, gridIndices, previousIndices, fcnDerivative, mca);
-        double gridLocation[epm_.getNumOfGrids()];
-        for (uint kk = 0; kk < epm_.getNumOfGrids(); ++kk)
-        {
-            gridLocation[kk] = epm_.getGridAtIndex(gridIndices.getIndexOfDim(kk), kk);
-        }
-        double df = fcnDerivative(gridLocation, mca.getMarkovControlFunction(gridLocation));
-        (*solution_)[gridIndices] = (*solution_)[previousIndices] + epm_.getDeltaGrid(currentGrid)*df;
-    }
-}
+    int barWidth = 70;
 
+    std::cout << "[";
+    int pos = static_cast<int>(barWidth * progress);
+    for (int ii = 0; ii < barWidth; ++ii) {
+        if (ii < pos)
+        {
+            std::cout << "=";
+        }
+        else if (ii == pos)
+        {
+            std::cout << ">";
+        }
+        else
+        {
+            std::cout << " ";
+        }
+    }
+    std::cout << "] " << int(progress * 100.0) << NEWL;
+    std::cout.flush();
+}

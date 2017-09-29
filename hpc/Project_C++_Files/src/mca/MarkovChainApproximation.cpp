@@ -81,9 +81,9 @@ MarkovChainApproximation::MarkovChainApproximation(MarkovChainParameters& mcp,
     else
     {
         // Set allocation sizes for new vectors
-        oldV_ = new GridValue;
-        newV_ = new GridValue;
-        minAlpha_ = new GridValue;
+        oldV_ = new GridIndices;
+        newV_ = new GridIndices;
+        minAlpha_ = new GridIndices;
 
         GridIndex mainGridIndices(mcp.getNumOfGrids());
 
@@ -163,7 +163,7 @@ void MarkovChainApproximation::computeMarkovApproximation(fcn2dep& costFunction,
                                                           fcn1dep& diffFunction)
 {
     // Assign memory for v_summed now to avoid having to reassign the memory in loops
-    vector<double> v_summed(mcp_.getAlphaLength());
+    vector<vector<double>> v_summed(mcp_.getAlphaLength());
     // Current index of grid (e.g. for a 3x3 system we are at (0,1,3) or something
     GridIndex gridIndices(mcp_.getNumOfGrids());
 
@@ -206,7 +206,7 @@ void MarkovChainApproximation::computeMarkovApproximation(fcn2dep& costFunction,
     cout << "==== Finished Markov Chain Approximation ====" << endl;
 }
 
-void MarkovChainApproximation::solveTransitionSummations(std::vector<double>& v_summed,
+void MarkovChainApproximation::solveTransitionSummations(std::vector<std::vector<double>>& v_summed,
                                                          GridIndex& gridIndices,
                                                          fcn2dep& costFunctionK,
                                                          fcn2dep& driftFunction,
@@ -225,25 +225,47 @@ void MarkovChainApproximation::solveTransitionSummations(std::vector<double>& v_
     for (uint ai = 0; ai < mcp_.getAlphaLength(); ++ai)
     {
         double alpha = mcp_.getAlphaAtIndex(ai);
-        double den = pow(diffFunction(gridLocation), 2.0) + mcp_.getH() * B_func(driftFunction, gridLocation, alpha);
-        double delta_t = pow(mcp_.getH(), 2.0) / den;
-        double k = costFunctionK(gridLocation, alpha);
+
+        // Denominator for each dimension
+        double* den = diffFunction(gridLocation);
+        double* bFunc = B_func(driftFunction, gridLocation, alpha);
+        for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
+        {
+            den[ii] = pow(den[ii], 2.0) + mcp_.getH()*bFunc[ii];
+        }
+        // De-allocate memory that came from bFunc
+        delete bFunc;
+
+        // Delta_t for each dimension
+        double* delta_t = double[mcp_.getNumOfGrids()];
+        for (int ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
+        {
+            delta_t[ii] = pow(mcp_.getH(), 2.0) / den[ii];
+        }
+
+        // k for each dimension
+        double* k = costFunctionK(gridLocation, alpha);
 
         solveTransitionProbabilities(v_probabilities, gridIndices, alpha, den, driftFunction, diffFunction);
 
         // Solve dynamic programming equation
         v_summed[ai] = kahanSum(v_probabilities, numOfPossibilities) + delta_t * k;
+
+        // De-allocate memory that came from diffFunction to den
+        delete den;
+        // De-allocate memory that came from costFunction to k
+        delete k;
     }
 }
 
-double MarkovChainApproximation::B_func(fcn2dep& driftFunction,
+double* MarkovChainApproximation::B_func(fcn2dep& driftFunction,
                                          double* gridLocation,
                                          double alpha)
 {
-    double result = driftFunction(gridLocation, alpha);
-    if (result < 0)
+    auto result = driftFunction(gridLocation, alpha);
+    for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
     {
-        result = -result;
+        result[ii] = fabs(result[ii]);
     }
     return result;
 }
@@ -251,7 +273,7 @@ double MarkovChainApproximation::B_func(fcn2dep& driftFunction,
 void MarkovChainApproximation::solveTransitionProbabilities(std::vector<double>& v_probabilities,
                                                             GridIndex& gridIndices,
                                                             double alpha,
-                                                            double den,
+                                                            double* den,
                                                             fcn2dep& driftFunction,
                                                             fcn1dep& diffFunction)
 {
@@ -372,7 +394,7 @@ double MarkovChainApproximation::kahanSum(const vector<double>& doubleArray, siz
     return sum;
 }
 
-void MarkovChainApproximation::determineMinimumAlpha(const vector<double>& v_summed, GridIndex& gridIndices)
+void MarkovChainApproximation::determineMinimumAlpha(const std::vector<std::vector<double>>& v_summed, GridIndex& gridIndices)
 {
     // Find minimum v_summed and its index
     uint minIndex = 0;

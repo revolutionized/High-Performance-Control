@@ -43,5 +43,5 @@ struct GridIndexCompare
     }
 };
 
-typedef std::map<GridIndex, double, GridIndexCompare> GridValue;
+typedef std::map<GridIndex, double, GridIndexCompare> GridIndices;
 

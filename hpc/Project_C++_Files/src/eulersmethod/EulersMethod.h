@@ -16,46 +16,41 @@
 #define NEWL "\n"
 #endif
 
-typedef const std::function<double(double*, double)> fcn2dep;
-typedef const std::function<double(double*)> fcn1dep;
-
 class EulersMethod
 {
 public:
     // METHODS ------------------------------------------------------------------------------------------------- METHODS
 
-    explicit EulersMethod(GridParameters& epm);
+    EulersMethod(double timeLeftBound,
+                 double timeRightBound,
+                 double deltaTime,
+                 unsigned int dimensions);
+
+    EulersMethod(double timeLeftBound,
+                 double timeRightBound,
+                 unsigned int timeLength,
+                 unsigned int dimensions);
 
     ~EulersMethod();
 
-    void solve(fcn1dep& fcnDerivative, double initGuess);
-
     void solve(fcn2dep& fcnDerivative,
-               MarkovChainApproximation& mca,
-               double initGuess);
+               double* initGuess,
+               MarkovChainApproximation* mca);
 
     void saveSolution(std::ofstream& stream);
 
 private:
 
+    void printProgress(float progress);
+
+    void setupSolution();
 
     // FIELDS --------------------------------------------------------------------------------------------------- FIELDS
-
-    GridValue* solution_ = nullptr;
-    GridParameters epm_;
-
-    void recursiveSolve(uint currentGrid,
-                        GridIndex& gridIndices,
-                        GridIndex& previousIndices,
-                        fcn1dep& fcnDerivative);
-
-    void recursiveSolve(uint currentGrid,
-                        GridIndex& gridIndices,
-                        GridIndex& previousIndices,
-                        fcn2dep& fcnDerivative,
-                        MarkovChainApproximation& mca);
-
-    void test();
+    std::vector<double*>* solution_ = nullptr;
+    double timeLeftBound_;
+    double deltaTime_;
+    unsigned int timeLength_;
+    unsigned int dimensions_;
 };
 
 
