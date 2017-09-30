@@ -13,7 +13,6 @@
 
 #include "Functions2.h"
 #include "mca/MarkovChainApproximation.h"
-#include "multidim/GridParameters.h"
 #include "eulersmethod/EulersMethod.h"
 
 using std::cout;
@@ -29,7 +28,7 @@ int main()
     auto euler_grid_size = static_cast<unsigned int>(pow(10, 2));
     double startingBound = 0.0;
     double exitingBound = 3.0;
-    double initGuess = 2.0;
+    double initGuessPtr[1] = {2.0};
     // Only 1 dimension for the example
     const double gridLeftBound[1] = {startingBound};
     const double gridRightBound[1] = {exitingBound};
@@ -40,15 +39,16 @@ int main()
     // Here we create a std::function for the ODE derivative. This is made from the problem ODE given in "functions.h"
     // and matched with the exact minimum control value needed for optimal control (that is the analytical exact value)
     std::function<double(double*)> fcnExactControl = exactMinimumControl2;
-    const std::function<double(double*)> fcnDerivativeExact = [](double* x)
+    const std::function<double*(double*, double)> fcnDerivativeExact = [](double* x, double alpha)
     {
-        return problemOde2(x, exactMinimumControl2(x));
+        alpha = exactMinimumControl2(x);
+        return problemOde2(x, alpha);
     };
 
     // We use the EulersMethod class
-    auto euler = new EulersMethod(epm, 0, 0, nullptr);
+    auto euler = new EulersMethod(epm);
     // And then solve the ODE using Euler's method and the function for the derivative we put together before
-    euler->solve(fcnDerivativeExact, initGuess, nullptr, 0);
+    euler->solve(fcnDerivativeExact, initGuessPtr, nullptr);
 
     // Create file and load it with the exact data results (the state space)
     ofstream exactEulerFileStream;
@@ -116,16 +116,16 @@ int main()
     double markovInitGuess = 2.0;
 
     // Markov Chain Approximation (MCA) will solve the optimal cost values and ODE values at each point
-    MarkovChainApproximation markovCA(mcp, initGuess, 4, true);
+    MarkovChainApproximation markovCA(mcp, markovInitGuess, 4, true);
     markovCA.computeMarkovApproximation(costFunction2, driftFunction2, diffFunction2);
 
     // We use the EulersMethod class again
-    euler = new EulersMethod(epm, 0, 0, nullptr);
+    euler = new EulersMethod(epm);
 
     // The EulersMethod1D function has a solve that allows you to pass it the MCA object, and thus it utilises the MCA
     // ODE state space results and optimal control results.
-    const std::function<double(double*, double)> fcnDerivativeMarkov = problemOde2;
-    euler->solve(fcnDerivativeMarkov, markovCA, markovInitGuess, 0);
+    const std::function<double*(double*, double)> fcnDerivativeMarkov = problemOde2;
+    euler->solve(fcnDerivativeMarkov, initGuessPtr, &markovCA);
 
     // Create file with exact data (same as before)
     ofstream markovEulerFile;

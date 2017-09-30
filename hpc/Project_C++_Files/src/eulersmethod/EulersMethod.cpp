@@ -8,11 +8,10 @@ EulersMethod::EulersMethod(double timeLeftBound,
                            double timeRightBound,
                            double deltaTime,
                            unsigned int dimensions)
-    : timeLeftBound_(timeLeftBound),
-      deltaTime_(deltaTime),
+    : deltaTime_(deltaTime),
       dimensions_(dimensions)
 {
-    assert(timeRightBound > timeLeftBound && timeLength > 0 && dimensions > 0);
+    assert(timeRightBound > timeLeftBound && deltaTime > 0.0 && dimensions > 0);
     timeLength_ = static_cast<uint>(floor((timeRightBound - timeLeftBound)/deltaTime));
 
     setupSolution();
@@ -22,13 +21,20 @@ EulersMethod::EulersMethod(double timeLeftBound,
                            double timeRightBound,
                            unsigned int timeLength,
                            unsigned int dimensions)
-        : timeLeftBound_(timeLeftBound),
-          timeLength_(timeLength),
+        : timeLength_(timeLength),
           dimensions_(dimensions)
 {
     assert(timeRightBound > timeLeftBound && timeLength > 0 && dimensions > 0);
     deltaTime_ = (timeRightBound - timeLeftBound) / (timeLength - 1);
 
+    setupSolution();
+}
+
+EulersMethod::EulersMethod(GridParameters& gpa)
+        : timeLength_(gpa.getGridLength(0)),
+          deltaTime_(gpa.getDeltaGrid(0)),
+          dimensions_(gpa.getNumOfGrids())
+{
     setupSolution();
 }
 
@@ -41,11 +47,12 @@ EulersMethod::~EulersMethod()
     delete solution_;
 }
 
-template <typename double>
 void EulersMethod::solve(fcn2dep& fcnDerivative,
-                         double* initGuess,
+                         const double* initGuess,
                          MarkovChainApproximation* mca)
 {
+    std::cout << "==== Starting Euler's Method Approximation ====" << std::endl;
+
     for (unsigned int ii = 0; ii < dimensions_; ++ii)
     {
         (*solution_)[0][ii] = initGuess[ii];
@@ -74,22 +81,32 @@ void EulersMethod::solve(fcn2dep& fcnDerivative,
         delete xDash;
 
         // Print progress to screen
-        printProgress(static_cast<float>(ii/(timeLength_-1)));
+        printProgress(static_cast<float>(ii) / static_cast<float>(timeLength_-1));
     }
+
+    std::cout << "==== Finished Euler's Method Approximation ====" << std::endl;
 }
+
 
 void EulersMethod::saveSolution(std::ofstream& stream)
 {
+    int counter = 0;
     for (auto& sol : *solution_)
     {
+        // Print the time component
+        stream << counter*deltaTime_ << " ";
+        counter++;
+
+        // Print the value that the solution has at each dimension
         for (int jj = 0; jj < dimensions_; jj++)
         {
             stream << sol[jj] << " ";
         }
+
+        // Create a new line
         stream << NEWL;
     }
 }
-
 
 // PRIVATE METHODS -------------------------------------------------------- PRIVATE METHODS //
 
@@ -108,7 +125,7 @@ void EulersMethod::printProgress(float progress)
     int barWidth = 70;
 
     std::cout << "[";
-    int pos = static_cast<int>(barWidth * progress);
+    auto pos = static_cast<int>(barWidth * progress);
     for (int ii = 0; ii < barWidth; ++ii) {
         if (ii < pos)
         {
@@ -123,6 +140,6 @@ void EulersMethod::printProgress(float progress)
             std::cout << " ";
         }
     }
-    std::cout << "] " << int(progress * 100.0) << NEWL;
+    std::cout << "] " << int(progress * 100.0) << "%" << NEWL;
     std::cout.flush();
 }

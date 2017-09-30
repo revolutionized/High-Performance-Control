@@ -59,8 +59,7 @@ private:
     /// \param costFunctionK Same cost function given at the computeMarkovApproximation call
     /// \param diffFunction Same sigma function given at the computeMarkovApproximation call
     // TODO: Explain why we have to delete bFunc in this function
-    void solveTransitionSummations(std::vector<std::vector<double>>& v_summed,
-                                   GridIndex& gridIndices,
+    void solveTransitionSummations(GridIndex& gridIndices,
                                    fcn2dep& costFunctionK,
                                    fcn2dep& driftFunction,
                                    fcn1dep& diffFunction);
@@ -75,37 +74,32 @@ private:
     /// \brief Computes the transition values. This is a convenience function for splitting the code into smaller chunks
     /// \param v_probabilities This is the vector that gets filled with the transition values (being the transition
     /// probability multiplied by the previous value of the dynamic programming equation at the position).
-    /// \param gridIndices Current index of the grid
+    /// \param currentGridIndex Current index of the grid
     /// \param alpha Current value of alpha
     /// \param den The denominator for $ \Delta t $ is the same here as it is for $ p^{h} $, so we pass the value of the
     /// denominator in to save re-computation over each iteration.
     /// \param diffFunction Same sigma function given at the computeMarkovApproximation call
     void
-    solveTransitionProbabilities(std::vector<double>& v_probabilities,
-                                 GridIndex& gridIndices,
+    solveTransitionProbabilities(GridIndex& currentIndices,
+                                 uint currentDimension,
                                  double alpha,
-                                 double* den,
+                                 double den,
                                  fcn2dep& driftFunction,
                                  fcn1dep& diffFunction);
 
     /// \brief Returns the value of $ p^{h}(x, y | \alpha) $
-    /// \param x Current value of grid location
+    /// \param currentLocation Current value of grid location
     /// \param y Transition state (x + h or x - h)
     /// \param alpha Current value of alpha
     /// \param den Denominator $ \sigma(x)^2 + hB(x) $
-    /// \param diffFunction Same sigma function given at the computeMarkovApproximation call
-    double transitionProb(double* x,
-                          bool upperJump,
-                          double alpha,
-                          double den,
-                          fcn2dep& driftFunction,
-                          fcn1dep& diffFunction);
+    /// \param b_part Same sigma function given at the computeMarkovApproximation call
+    double transitionProb(bool upperJump, double num, double den, double b_part);
 
     /// \brief Summation of double array elements using Kahan formula (which ensures rounding errors aren't lost)
-    /// \param doubleArray The array whose elements are to be summed
+    /// \param array The array whose elements are to be summed
     /// \param size_n Total size of the given array
     /// \return The total value of all the elements summed together
-    double kahanSum(const std::vector<double>& doubleArray, size_t size_n);
+    double kahanSum(const std::vector<double>* array);
 
 
 
@@ -116,7 +110,7 @@ private:
     /// This is a convenience function for splitting the code into smaller chunks.
     /// \param v_summed The values of the dynamic programming equation at each alpha value
     /// \param gridIndices The current index of the grid
-    void determineMinimumAlpha(const std::vector<std::vector<double>>& v_summed, GridIndex& gridIndices);
+    void determineMinimumAlpha(GridIndex& gridIndices);
 
     /// \brief Returns relative error between two arrays.
     ///
@@ -169,5 +163,8 @@ private:
     /// The values for the optimal alpha (or control parameter) for each index along the grid is stored in this vector
     GridIndices* minAlpha_ = nullptr;
 
+    std::vector<double>* pHat_ = nullptr;
+    std::vector<double>* vProbs_ = nullptr;
+    std::vector<std::vector<double>>* vSummed_ = nullptr;
 };
 

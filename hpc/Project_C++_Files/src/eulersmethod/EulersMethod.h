@@ -31,10 +31,12 @@ public:
                  unsigned int timeLength,
                  unsigned int dimensions);
 
+    explicit EulersMethod(GridParameters& gpa);
+
     ~EulersMethod();
 
     void solve(fcn2dep& fcnDerivative,
-               double* initGuess,
+               const double* initGuess,
                MarkovChainApproximation* mca);
 
     void saveSolution(std::ofstream& stream);
@@ -47,7 +49,6 @@ private:
 
     // FIELDS --------------------------------------------------------------------------------------------------- FIELDS
     std::vector<double*>* solution_ = nullptr;
-    double timeLeftBound_;
     double deltaTime_;
     unsigned int timeLength_;
     unsigned int dimensions_;
