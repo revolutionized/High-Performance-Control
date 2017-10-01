@@ -59,7 +59,7 @@ private:
     /// \param costFunctionK Same cost function given at the computeMarkovApproximation call
     /// \param diffFunction Same sigma function given at the computeMarkovApproximation call
     // TODO: Explain why we have to delete bFunc in this function
-    void solveTransitionSummations(GridIndex& gridIndices,
+    void solveTransitionSummations(const GridIndex& gridIndices,
                                    fcn2dep& costFunctionK,
                                    fcn2dep& driftFunction,
                                    fcn1dep& diffFunction);
@@ -80,7 +80,7 @@ private:
     /// denominator in to save re-computation over each iteration.
     /// \param diffFunction Same sigma function given at the computeMarkovApproximation call
     void
-    solveTransitionProbabilities(GridIndex& currentIndices,
+    solveTransitionProbabilities(const GridIndex& currentIndices,
                                  uint currentDimension,
                                  double alpha,
                                  double den,
@@ -110,7 +110,7 @@ private:
     /// This is a convenience function for splitting the code into smaller chunks.
     /// \param v_summed The values of the dynamic programming equation at each alpha value
     /// \param gridIndices The current index of the grid
-    void determineMinimumAlpha(GridIndex& gridIndices);
+    void determineMinimumAlpha(const GridIndex& gridIndices);
 
     /// \brief Returns relative error between two arrays.
     ///

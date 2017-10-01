@@ -84,7 +84,9 @@ void EulersMethod::solve(fcn2dep& fcnDerivative,
         printProgress(static_cast<float>(ii) / static_cast<float>(timeLength_-1));
     }
 
-    std::cout << "==== Finished Euler's Method Approximation ====" << std::endl;
+    // Print one new line since our progress bar uses "\r" which returns to the beginning, and then
+    // two new lines at the end to have a gap after euler conclusion
+    std::cout << NEWL << "==== Finished Euler's Method Approximation ====" << NEWL << NEWL;
 }
 
 
@@ -140,6 +142,6 @@ void EulersMethod::printProgress(float progress)
             std::cout << " ";
         }
     }
-    std::cout << "] " << int(progress * 100.0) << "%" << NEWL;
+    std::cout << "] " << "%" << int(progress * 100.0) << "\r";
     std::cout.flush();
 }

@@ -130,22 +130,6 @@ MarkovChainApproximation::~MarkovChainApproximation()
 {
     if (memoryModeRAM_)
     {
-        /*
-        for (uint ii = 0; ii < oldV_->size(); ++ii)
-        {
-            delete oldV_[ii];
-        }
-        delete oldV_;
-        for (uint ii = 0; ii < newV_->size(); ++ii)
-        {
-            delete newV_[ii];
-        }
-        delete newV_;
-        for (uint ii = 0; ii < minAlpha_->size(); ++ii)
-        {
-            delete minAlpha_[ii];
-        }
-         */
         delete oldV_;
         delete newV_;
         delete minAlpha_;
@@ -195,7 +179,8 @@ void MarkovChainApproximation::computeMarkovApproximation(fcn2dep& costFunction,
             oldV_->swap(*newV_);
             // Add a padding of 1 since we don't want to be on boundaries
             gridIndices.resetToOrigin(1);
-            
+
+
             do
             {
                 // Solve all summations for different alpha values
@@ -203,29 +188,28 @@ void MarkovChainApproximation::computeMarkovApproximation(fcn2dep& costFunction,
 
                 // Find the minimum alpha term for the DPE
                 determineMinimumAlpha(gridIndices);
-
-                // TODO: Need to change it so that it just iterates over the oldV_ or newV_ since
-                // the map is ordered according to this nextGridElement thing anyways. Will improve
-                // performance and actually make use of the ordering (else we are constantly searching
-                // through the map to store and retrieve irrespective of where we are at in our 'gridIndices'
             } while (gridIndices.nextGridElement(mcp_, 1));
-            
+
+            // Calculate relative error between newV and oldV
             relErr = getRelativeError();
-            
+
+            // Display progress
             cout << "Markov chain iteration complete. Relative error: " << relErr;
-            cout << ". Iteration: " << iterations << endl;
+            cout << ". Iteration: " << iterations + 1 << "\r";
             iterations++;
         } while (relErr > mcp_.getRelativeError() && iterations < mcp_.getMaxIterations());
     }
     else
     {
-
+        // TODO: File writing mode
     }
 
-    cout << "==== Finished Markov Chain Approximation ====" << endl;
+    // Print one new line since our iterations use "\r" which returns to the beginning, and then
+    // two new lines at the end to have a gap after MCA conclusion
+    cout << NEWL << "==== Finished Markov Chain Approximation ====" << NEWL << NEWL;
 }
 
-void MarkovChainApproximation::solveTransitionSummations(GridIndex& gridIndices,
+void MarkovChainApproximation::solveTransitionSummations(const GridIndex& gridIndices,
                                                          fcn2dep& costFunctionK,
                                                          fcn2dep& driftFunction,
                                                          fcn1dep& diffFunction)
@@ -288,7 +272,7 @@ double* MarkovChainApproximation::B_func(fcn2dep& driftFunction,
     return result;
 }
 
-void MarkovChainApproximation::solveTransitionProbabilities(GridIndex& currentIndices,
+void MarkovChainApproximation::solveTransitionProbabilities(const GridIndex& currentIndices,
                                                             uint currentDimension,
                                                             double alpha,
                                                             double den,
@@ -396,7 +380,7 @@ double MarkovChainApproximation::kahanSum(const vector<double>* array)
     return sum;
 }
 
-void MarkovChainApproximation::determineMinimumAlpha(GridIndex& gridIndices)
+void MarkovChainApproximation::determineMinimumAlpha(const GridIndex& gridIndices)
 {
     // We search for the alpha that minimises the dynamic programming equation, and return it's index
     uint minIndex = 0;
@@ -437,13 +421,20 @@ double MarkovChainApproximation::getRelativeError()
 
     GridIndex gridIndices(mcp_.getNumOfGrids());
     gridIndices.resetToOrigin();
-    
-    do
+
+    for (auto& oldV : *oldV_)
     {
         // Perform Frobenius tensor norm
-        temp += pow(fabs((*oldV_)[gridIndices]) - fabs((*newV_)[gridIndices]), 2.0);
-    } while (gridIndices.nextGridElement(mcp_));
-        
+        temp += pow(fabs(oldV.second) - fabs((*newV_)[oldV.first]), 2.0);
+    }
+
+//    do
+//    {
+//        // Perform Frobenius tensor norm
+//        temp += pow(fabs((*oldV_)[gridIndices]) - fabs((*newV_)[gridIndices]), 2.0);
+//    } while (gridIndices.nextGridElement(mcp_));
+
+    temp /= 10;
     return sqrt(temp);
 }
 
