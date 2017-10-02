@@ -37,7 +37,7 @@ public:
 
     unsigned int getNumOfGrids() const;
 
-    unsigned int getGridLength(unsigned int gridIndex) const;
+    unsigned int getGridLength(unsigned int dimension) const;
 
     double getDeltaGrid(unsigned int gridIndex) const;
 

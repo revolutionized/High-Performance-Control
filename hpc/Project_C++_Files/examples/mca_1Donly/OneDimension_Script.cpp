@@ -17,10 +17,10 @@
 #include "../../src/eulersmethod_1Donly/EulersMethod1D.h"
 extern "C"
 {
-//#include "c3/c3.h" // Already included in the c3sc file
-//#include "c3sc/c3sc.h"
-//#include "c3sc/bellman.h"
-//#include "c3sc/valuefunc.h"
+#include "c3/c3.h" // Already included in the c3sc file
+#include "c3sc/c3sc.h"
+#include "c3sc/bellman.h"
+#include "c3sc/valuefunc.h"
 }
 
 using namespace std;

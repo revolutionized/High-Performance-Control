@@ -107,6 +107,14 @@ void EulersMethod::saveSolution(std::ofstream& stream)
     }
 }
 
+void EulersMethod::getSolutionAt(int index, double* out) const
+{
+    for (int ii = 0; ii < dimensions_; ++ii)
+    {
+        out[ii] = (*solution_)[index][ii];
+    }
+}
+
 // PRIVATE METHODS -------------------------------------------------------- PRIVATE METHODS //
 
 void EulersMethod::setupSolution()
@@ -119,7 +127,7 @@ void EulersMethod::setupSolution()
     }
 }
 
-void EulersMethod::printProgress(float progress)
+void EulersMethod::printProgress(float progress) const
 {
     int barWidth = 70;
 

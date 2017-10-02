@@ -25,7 +25,7 @@ int main()
     // First we consider the exact method ----------------------------------------------- //
 
     // We set up the "grid" or space we will be considering
-    auto euler_grid_size = static_cast<unsigned int>(pow(10, 2));
+    auto euler_grid_size = static_cast<unsigned int>(pow(10, 3));
     double startingBound = 0.0;
     double exitingBound = 3.0;
     double initGuessPtr[1] = {2.0};
@@ -101,11 +101,13 @@ int main()
     unsigned int markov_grid_size[1];
     markov_grid_size[0] = {3*static_cast<unsigned int>(pow(10, 1)) + 1};
     auto markov_alpha_discretisation_size = 2*static_cast<unsigned int>(pow(10,2)) + 1;
-    double alphaStartingBound = -2.5;
+    double markov_grid_rightbound = 1.0;
+    double m_gridRightBound[1] = {markov_grid_rightbound};
+    double alphaStartingBound = -3.0;
     double alphaExitingBound = 0.5;
     double h = pow(10.0, -3.0);
     MarkovChainParameters mcp(gridLeftBound,
-                              gridRightBound,
+                              m_gridRightBound,
                               markov_grid_size,
                               alphaStartingBound,
                               alphaExitingBound,

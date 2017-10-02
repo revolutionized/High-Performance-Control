@@ -13,7 +13,7 @@ clear all
 global A B h t x_discretised
 A=-2;
 B=1;
-L = 1; % arbitrary length
+L = 3; % arbitrary length
 bound_loc_west = 0;
 bound_loc_east = L;
 h = 10^-3; % delta_t (not delta x)

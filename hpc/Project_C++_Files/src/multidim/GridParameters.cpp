@@ -82,9 +82,9 @@ unsigned int GridParameters::getNumOfGrids() const
     return numOfGridDimensions_;
 }
 
-unsigned int GridParameters::getGridLength(unsigned int gridIndex) const
+unsigned int GridParameters::getGridLength(unsigned int dimension) const
 {
-    return gridLength_[gridIndex];
+    return gridLength_[dimension];
 }
 
 

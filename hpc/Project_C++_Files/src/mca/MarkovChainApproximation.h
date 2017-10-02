@@ -46,6 +46,9 @@ public:
     /// to x.
     double getMarkovControlFunction(double* gridLocation);
 
+
+    void printAlpha(std::ofstream& stream);
+
 private:
     // METHODS ------------------------------------------------------------------------------------------------- METHODS
 
@@ -58,7 +61,6 @@ private:
     /// \param v_summed This is where all the summations are stored
     /// \param costFunctionK Same cost function given at the computeMarkovApproximation call
     /// \param diffFunction Same sigma function given at the computeMarkovApproximation call
-    // TODO: Explain why we have to delete bFunc in this function
     void solveTransitionSummations(const GridIndex& gridIndices,
                                    fcn2dep& costFunctionK,
                                    fcn2dep& driftFunction,

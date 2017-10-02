@@ -93,7 +93,9 @@ MarkovChainApproximation::MarkovChainApproximation(MarkovChainParameters& mcp,
             GridIndex oldVGridIndices(mainGridIndices);
             oldV_->insert(std::make_pair(oldVGridIndices, initStateGuess));
             GridIndex newVGridIndices(mainGridIndices);
-            minAlpha_->insert(std::make_pair(newVGridIndices,initStateGuess));
+            newV_->insert(std::make_pair(newVGridIndices, initStateGuess));
+            GridIndex alphaGridIndices(mainGridIndices);
+            minAlpha_->insert(std::make_pair(alphaGridIndices,0.0));
         } while (mainGridIndices.nextGridElement(mcp));
     }
 
@@ -175,6 +177,9 @@ void MarkovChainApproximation::computeMarkovApproximation(fcn2dep& costFunction,
     {
         do
         {
+            // The newV always relies on the oldV so we just replace the two pointers
+            oldV_->swap(*newV_);
+
             // Add a padding of 1 since we don't want to be on boundaries
             gridIndices.resetToOrigin(1);
 
@@ -196,8 +201,7 @@ void MarkovChainApproximation::computeMarkovApproximation(fcn2dep& costFunction,
             cout << ". Iteration: " << iterations + 1 << "\r";
             iterations++;
 
-            // The newV always relies on the oldV so we just replace the two pointers
-            oldV_->swap(*newV_);
+
 
         } while (relErr > mcp_.getRelativeError() && iterations < mcp_.getMaxIterations());
     }
@@ -301,11 +305,6 @@ void MarkovChainApproximation::solveTransitionProbabilities(const GridIndex& cur
     // Finally we consider the case that it does not move at all (which is just the complement)
     (*pHat_)[stay] -= (*pHat_)[lower] + (*pHat_)[upper];
 
-    double result[3];
-    result[0] = (*pHat_)[lower];
-    result[1] = (*pHat_)[upper];
-    result[2] = (*pHat_)[stay];
-
     // TODO: Remove this if no problems occur, this is just for error checking
     if ((*pHat_)[stay] < 0)
     {
@@ -320,16 +319,9 @@ void MarkovChainApproximation::solveTransitionProbabilities(const GridIndex& cur
     upperIndices.setGridIndexOfDim(currentDimension, currentIndices.getIndexOfDim(currentDimension) + 1);
 
     // Now we can calculate the dynamic probabilities
-    result[0] = (*oldV_)[lowerIndices];
-    result[1] = (*oldV_)[upperIndices];
-    result[2] = (*oldV_)[currentIndices];
     (*vProbs_)[lower] = (*pHat_)[lower]*(*oldV_)[lowerIndices];
     (*vProbs_)[upper] = (*pHat_)[upper]*(*oldV_)[upperIndices];
     (*vProbs_)[stay] = (*pHat_)[stay]*(*oldV_)[currentIndices];
-
-    result[0] = (*vProbs_)[lower];
-    result[1] = (*vProbs_)[upper];
-    result[2] = (*vProbs_)[stay];
 }
 
 
@@ -377,11 +369,14 @@ void MarkovChainApproximation::determineMinimumAlpha(const GridIndex& gridIndice
     // We search for the alpha that minimises the dynamic programming equation, and return it's index
     uint minIndex = 0;
     // For every alpha considered, we need to compare which creates the minimum tensor norm
-    double minNorm = MAXFLOAT;
-    double currentNorm = 0.0;
+    double minNorm = pow(10.0, 3);
+    double currentNorm;
 
-    for (uint ii = 1; ii < mcp_.getAlphaLength(); ++ii)
+
+    for (uint ii = 0; ii < mcp_.getAlphaLength(); ++ii)
     {
+        currentNorm = 0.0;
+
         for (int jj = 0; jj < mcp_.getNumOfGrids(); ++jj)
         {
             currentNorm += pow((*vSummed_)[ii][jj], 2.0);
@@ -480,4 +475,15 @@ GridIndex MarkovChainApproximation::getGridIndicesClosestTo(double* gridLocation
     } while (currentGridIndex.nextGridElement(mcp_));
 
     return closestGridIndex;
+}
+
+void MarkovChainApproximation::printAlpha(std::ofstream& stream)
+{
+    GridIndex newGrid(1);
+    newGrid.resetToOrigin();
+
+    do
+    {
+        stream << (*minAlpha_)[newGrid] << NEWL;
+    } while (newGrid.nextGridElement(mcp_));
 }

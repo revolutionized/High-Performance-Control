@@ -41,9 +41,11 @@ public:
 
     void saveSolution(std::ofstream& stream);
 
+    void getSolutionAt(int index, double* out) const;
+
 private:
 
-    void printProgress(float progress);
+    void printProgress(float progress) const;
 
     void setupSolution();
 
