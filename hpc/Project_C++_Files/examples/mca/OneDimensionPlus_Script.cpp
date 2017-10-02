@@ -39,10 +39,10 @@ int main()
     // Here we create a std::function for the ODE derivative. This is made from the problem ODE given in "functions.h"
     // and matched with the exact minimum control value needed for optimal control (that is the analytical exact value)
     std::function<double(double*)> fcnExactControl = exactMinimumControl2;
-    const std::function<double*(double*, double)> fcnDerivativeExact = [](double* x, double alpha)
+    const std::function<void(double*, double, double*)> fcnDerivativeExact = [](double* x, double alpha, double* out)
     {
         alpha = exactMinimumControl2(x);
-        return problemOde2(x, alpha);
+        problemOde2(x, alpha, out);
     };
 
     // We use the EulersMethod class
@@ -124,7 +124,7 @@ int main()
 
     // The EulersMethod1D function has a solve that allows you to pass it the MCA object, and thus it utilises the MCA
     // ODE state space results and optimal control results.
-    const std::function<double*(double*, double)> fcnDerivativeMarkov = problemOde2;
+    const std::function<void(double*, double, double*)> fcnDerivativeMarkov = problemOde2;
     euler->solve(fcnDerivativeMarkov, initGuessPtr, &markovCA);
 
     // Create file with exact data (same as before)

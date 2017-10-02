@@ -5,7 +5,7 @@
 #include "GridParameters.h"
 #include <cmath>
 #include <cassert>
-
+#include "GridIndex.h"
 
 typedef unsigned int uint;
 
@@ -69,7 +69,7 @@ GridParameters::~GridParameters()
 
 // GETTERS ------------------------------------------------------------------------ GETTERS //
 
-double GridParameters::getGridAtIndex(unsigned int index, unsigned int gridNum)
+double GridParameters::getGridAtIndex(unsigned int index, unsigned int gridNum) const
 {
     assert(gridNum < numOfGridDimensions_ && index < gridLength_[gridNum]);
 
@@ -77,20 +77,28 @@ double GridParameters::getGridAtIndex(unsigned int index, unsigned int gridNum)
     return gridPosition;
 }
 
-unsigned int GridParameters::getNumOfGrids()
+unsigned int GridParameters::getNumOfGrids() const
 {
     return numOfGridDimensions_;
 }
 
-unsigned int GridParameters::getGridLength(unsigned int gridIndex)
+unsigned int GridParameters::getGridLength(unsigned int gridIndex) const
 {
     return gridLength_[gridIndex];
 }
 
 
-double GridParameters::getDeltaGrid(unsigned int gridIndex)
+double GridParameters::getDeltaGrid(unsigned int gridIndex) const
 {
     return deltaGrid_[gridIndex];
+}
+
+void GridParameters::getGridAtIndices(const GridIndex& gridIndices, double* gridLocOut) const
+{
+    for (uint ii = 0; ii < numOfGridDimensions_; ++ii)
+    {
+        gridLocOut[ii] = getGridAtIndex(gridIndices.getIndexOfDim(ii), ii);
+    }
 }
 
 // PRIVATE METHODS -------------------------------------------------------- PRIVATE METHODS //

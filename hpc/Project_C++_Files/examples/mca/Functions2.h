@@ -12,14 +12,14 @@ extern int A;
 extern int B;
 extern int k;
 
-double* problemOde2(const double* x, const double u);
+void problemOde2(const double* x, double u, double* out);
 
 double exactMinimumControl2(const double* x);
 
-double* costFunction2(const double* x, const double alpha);
+void costFunction2(const double* x, double alpha, double* out);
 
-double* driftFunction2(const double* x, const double alpha);
+void driftFunction2(const double* x, double alpha, double* out);
 
-double* diffFunction2(const double* x);
+void diffFunction2(const double* x, double* out);
 
-double* sigmaFunction2(const double* x);
+void sigmaFunction2(const double* x, double* out);

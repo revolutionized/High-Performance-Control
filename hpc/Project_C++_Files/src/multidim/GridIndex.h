@@ -5,7 +5,9 @@
 #pragma once
 
 #include <map>
-#include "GridParameters.h"
+//#include "GridParameters.h"
+
+class GridParameters;
 
 class GridIndex
 {
@@ -19,7 +21,7 @@ public:
 
     void resetToOrigin(unsigned int padding = 0);
 
-    bool nextGridElement(GridParameters& gp, unsigned int padding = 0);
+    bool nextGridElement(const GridParameters& gp, unsigned int padding = 0);
 
     unsigned int getIndexOfDim(unsigned int gridNum) const;
 
@@ -29,7 +31,7 @@ public:
 
     unsigned int id() const;
 private:
-    bool recursionCount(unsigned int padding, unsigned int curDimension, GridParameters& gp);
+    bool recursionCount(unsigned int padding, unsigned int curDimension, const GridParameters& gp);
     unsigned int numOfDimensions_;
     unsigned int* gridIndices_ = nullptr;
 

@@ -11,8 +11,8 @@
 #include "MarkovChainParameters.h"
 #include "multidim/GridIndex.h"
 
-typedef const std::function<double*(double*, double)> fcn2dep;
-typedef const std::function<double*(double*)> fcn1dep;
+typedef const std::function<void(double*, double, double*)> fcn2dep;
+typedef const std::function<void(double*, double*)> fcn1dep;
 
 class MarkovChainApproximation
 {
@@ -67,9 +67,10 @@ private:
     /// \brief B function with no control dependency
     /// See "Numerical Methods for Stochastic Control Problems in Continuous Time" (H. J. Kushner) pg. 99 where it gives
     /// B(x) = max_{\alpha\el U} \abs{b(x,\alpha)}.
-    double* B_func(fcn2dep& driftFunction,
-                   double* gridLocation,
-                   double alpha);
+    void B_func(fcn2dep& driftFunction,
+                double* gridLocation,
+                double alpha,
+                double* out);
 
     /// \brief Computes the transition values. This is a convenience function for splitting the code into smaller chunks
     /// \param v_probabilities This is the vector that gets filled with the transition values (being the transition

@@ -9,17 +9,13 @@ int A = -2;
 int B = 1;
 int k = 1;
 
-double* problemOde2(const double* x, const double u)
+void problemOde2(const double* x, double u, double* out)
 {
-    auto drF = driftFunction2(x,u);
-    auto diF = diffFunction2(x);
-    auto ode2 = new double[1];
-    ode2[0] = (*drF) + (*diF);
-    // Since each of the functions allocate space for a double including this one,
-    // we need to deallocate that memory
-    delete drF;
-    delete diF;
-    return ode2;
+    double drF[1];
+    driftFunction2(x,u,drF);
+    double diF[1];
+    diffFunction2(x,diF);
+    out[0] = drF[0] + diF[0];
 }
 
 double exactMinimumControl2(const double* x)
@@ -27,28 +23,23 @@ double exactMinimumControl2(const double* x)
     return -k*x[0];
 }
 
-double* costFunction2(const double* x, const double alpha)
+void costFunction2(const double* x, double alpha, double* out)
 {
-    auto cF = new double[1];
-    cF[0] = 5*pow(x[0],2.0) + pow(alpha, 2.0);
-    return cF;
+    out[0] = 5*pow(x[0],2.0) + pow(alpha, 2.0);
 }
 
-double* driftFunction2(const double* x, const double alpha)
+void driftFunction2(const double* x, double alpha, double* out)
 {
-    auto drF = new double[1];
-    drF[0] = A*x[0] + B*alpha;
-    return drF;
+    out[0] = A*x[0] + B*alpha;
+    auto test = 1;
 }
 
-double* diffFunction2(const double* x)
+void diffFunction2(const double* x, double* out)
 {
-    return sigmaFunction2(x);
+    sigmaFunction2(x, out);
 }
 
-double* sigmaFunction2(const double* x)
+void sigmaFunction2(const double* x, double* out)
 {
-    auto sigF = new double[1];
-    sigF[0] = 0.0;
-    return sigF;
+    out[0] = 0.0;
 }

@@ -4,6 +4,8 @@
 
 #pragma once
 
+class GridIndex;
+
 class GridParameters
 {
 public:
@@ -31,14 +33,15 @@ public:
     /// the sense that it's one increment after the other), this function just calculates and returns the grid at the
     /// specified index.
     /// \param index The index along the grid array. Must be >= 0 and less than the total length of the grid array.
-    double getGridAtIndex(unsigned int index, unsigned int gridNum);
+    double getGridAtIndex(unsigned int index, unsigned int gridNum) const;
 
-    unsigned int getNumOfGrids();
+    unsigned int getNumOfGrids() const;
 
-    unsigned int getGridLength(unsigned int gridIndex);
+    unsigned int getGridLength(unsigned int gridIndex) const;
 
-    double getDeltaGrid(unsigned int gridIndex);
+    double getDeltaGrid(unsigned int gridIndex) const;
 
+    void getGridAtIndices(const GridIndex& gridIndices, double* gridLocOut) const;
 private:
     // METHODS ------------------------------------------------------------------------------------------------- METHODS
 

@@ -175,8 +175,6 @@ void MarkovChainApproximation::computeMarkovApproximation(fcn2dep& costFunction,
     {
         do
         {
-            // The newV always relies on the oldV so we just replace the two
-            oldV_->swap(*newV_);
             // Add a padding of 1 since we don't want to be on boundaries
             gridIndices.resetToOrigin(1);
 
@@ -197,6 +195,10 @@ void MarkovChainApproximation::computeMarkovApproximation(fcn2dep& costFunction,
             cout << "Markov chain iteration complete. Relative error: " << relErr;
             cout << ". Iteration: " << iterations + 1 << "\r";
             iterations++;
+
+            // The newV always relies on the oldV so we just replace the two pointers
+            oldV_->swap(*newV_);
+
         } while (relErr > mcp_.getRelativeError() && iterations < mcp_.getMaxIterations());
     }
     else
@@ -225,14 +227,14 @@ void MarkovChainApproximation::solveTransitionSummations(const GridIndex& gridIn
         double alpha = mcp_.getAlphaAtIndex(ai);
 
         // Denominator for each dimension
-        double* den = diffFunction(gridLocation);
-        double* bFunc = B_func(driftFunction, gridLocation, alpha);
+        double den[mcp_.getNumOfGrids()];
+        diffFunction(gridLocation, den);
+        double bFunc[mcp_.getNumOfGrids()];
+        B_func(driftFunction, gridLocation, alpha, bFunc);
         for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
         {
             den[ii] = pow(den[ii], 2.0) + mcp_.getH()*bFunc[ii];
         }
-        // De-allocate memory that came from bFunc
-        delete bFunc;
 
         // Delta_t for each dimension
         double delta_t[mcp_.getNumOfGrids()];
@@ -242,9 +244,8 @@ void MarkovChainApproximation::solveTransitionSummations(const GridIndex& gridIn
         }
 
         // k for each dimension
-        double* k = costFunctionK(gridLocation, alpha);
-
-
+        double k[mcp_.getNumOfGrids()];
+        costFunctionK(gridLocation, alpha, k);
 
         for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
         {
@@ -252,24 +253,19 @@ void MarkovChainApproximation::solveTransitionSummations(const GridIndex& gridIn
             // Solve dynamic programming equation
             (*vSummed_)[ai][ii] = kahanSum(vProbs_) + delta_t[ii] * k[ii];
         }
-
-        // De-allocate memory that came from diffFunction to den
-        delete den;
-        // De-allocate memory that came from costFunction to k
-        delete k;
     }
 }
 
-double* MarkovChainApproximation::B_func(fcn2dep& driftFunction,
-                                         double* gridLocation,
-                                         double alpha)
+void MarkovChainApproximation::B_func(fcn2dep& driftFunction,
+                                      double* gridLocation,
+                                      double alpha,
+                                      double* out)
 {
-    auto result = driftFunction(gridLocation, alpha);
+    driftFunction(gridLocation, alpha, out);
     for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
     {
-        result[ii] = fabs(result[ii]);
+        out[ii] = fabs(out[ii]);
     }
-    return result;
 }
 
 void MarkovChainApproximation::solveTransitionProbabilities(const GridIndex& currentIndices,
@@ -284,42 +280,31 @@ void MarkovChainApproximation::solveTransitionProbabilities(const GridIndex& cur
     (*pHat_)[stay] = 1;
 
     double gridLoc[mcp_.getNumOfGrids()];
-    double* num;
-    double* b_part;
-    // We don't actually care what value is returned except for the current grid, but we must supply
-    // a real value to each dimension
-    for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
-    {
-        gridLoc[ii] = 0.0;
-    }
+    double num[mcp_.getNumOfGrids()];
+    double b_part[mcp_.getNumOfGrids()];
+    // Get
+    mcp_.getGridAtIndices(currentIndices, gridLoc);
 
-    // Determine 'y' -> the positions that this node can move to
-    vector<double> y(2);
+    // Solve numerator
+    diffFunction(gridLoc, num);
+    // Solve b_part
+    driftFunction(gridLoc, alpha, b_part);
 
     // First consider the case it moves up the current dimension plane
     int lower = 0;
-    y[lower] = mcp_.getGridAtIndex(currentIndices.getIndexOfDim(currentDimension) + 1, currentDimension);
-    gridLoc[currentDimension] = y[lower]; // So we set our grid location to this
-    num = diffFunction(gridLoc);
-    b_part = driftFunction(gridLoc, alpha);
-    (*pHat_)[lower] = transitionProb(true, num[currentDimension], den, b_part[currentDimension]);
-    // Clear memory allocated from functions
-    delete num;
-    delete b_part;
+    (*pHat_)[lower] = transitionProb(false, num[currentDimension], den, b_part[currentDimension]);
 
     // Now consider the case it moves down the current dimension plane
     int upper = 1;
-    y[upper] = mcp_.getGridAtIndex(currentIndices.getIndexOfDim(currentDimension) - 1, currentDimension);
-    gridLoc[currentDimension] = y[upper]; // So we set our grid location to this
-    num = diffFunction(gridLoc); // Recalculate numerator and b_part
-    b_part = driftFunction(gridLoc, alpha);
-    (*pHat_)[upper] = transitionProb(false, num[currentDimension], den, b_part[currentDimension]);
-    // Clear memory allocated from functions
-    delete num;
-    delete b_part;
+    (*pHat_)[upper] = transitionProb(true, num[currentDimension], den, b_part[currentDimension]);
 
     // Finally we consider the case that it does not move at all (which is just the complement)
     (*pHat_)[stay] -= (*pHat_)[lower] + (*pHat_)[upper];
+
+    double result[3];
+    result[0] = (*pHat_)[lower];
+    result[1] = (*pHat_)[upper];
+    result[2] = (*pHat_)[stay];
 
     // TODO: Remove this if no problems occur, this is just for error checking
     if ((*pHat_)[stay] < 0)
@@ -335,9 +320,16 @@ void MarkovChainApproximation::solveTransitionProbabilities(const GridIndex& cur
     upperIndices.setGridIndexOfDim(currentDimension, currentIndices.getIndexOfDim(currentDimension) + 1);
 
     // Now we can calculate the dynamic probabilities
+    result[0] = (*oldV_)[lowerIndices];
+    result[1] = (*oldV_)[upperIndices];
+    result[2] = (*oldV_)[currentIndices];
     (*vProbs_)[lower] = (*pHat_)[lower]*(*oldV_)[lowerIndices];
     (*vProbs_)[upper] = (*pHat_)[upper]*(*oldV_)[upperIndices];
     (*vProbs_)[stay] = (*pHat_)[stay]*(*oldV_)[currentIndices];
+
+    result[0] = (*vProbs_)[lower];
+    result[1] = (*vProbs_)[upper];
+    result[2] = (*vProbs_)[stay];
 }
 
 

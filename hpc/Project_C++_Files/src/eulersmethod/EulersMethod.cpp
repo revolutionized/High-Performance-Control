@@ -61,14 +61,14 @@ void EulersMethod::solve(fcn2dep& fcnDerivative,
     for (unsigned int ii = 1; ii < timeLength_; ++ii)
     {
         // Solve derivative
-        double* xDash;
+        double xDash[dimensions_];
         if (mca != nullptr)
         {
-            xDash = fcnDerivative((*solution_)[ii-1], mca->getMarkovControlFunction((*solution_)[ii-1]));
+            fcnDerivative((*solution_)[ii-1], mca->getMarkovControlFunction((*solution_)[ii-1]), xDash);
         }
         else
         {
-            xDash = fcnDerivative((*solution_)[ii-1], 0);
+            fcnDerivative((*solution_)[ii-1], 0, xDash);
         }
 
         // Add derivative by deltaTime to the previous solution
@@ -76,9 +76,6 @@ void EulersMethod::solve(fcn2dep& fcnDerivative,
         {
             (*solution_)[ii][jj] = (*solution_)[ii-1][jj] + xDash[jj]*deltaTime_;
         }
-
-        // Since each of the functionDerivatives return a pointer we need to deallocate that pointer here
-        delete xDash;
 
         // Print progress to screen
         printProgress(static_cast<float>(ii) / static_cast<float>(timeLength_-1));

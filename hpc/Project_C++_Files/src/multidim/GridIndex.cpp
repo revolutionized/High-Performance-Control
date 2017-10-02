@@ -1,7 +1,5 @@
-//
-
-#include <cassert>
 #include "GridIndex.h"
+#include "GridParameters.h"
 
 GridIndex::GridIndex(unsigned int numOfDimensions_)
         : numOfDimensions_(numOfDimensions_)
@@ -33,12 +31,12 @@ void GridIndex::resetToOrigin(unsigned int padding)
     }
 }
 
-bool GridIndex::nextGridElement(GridParameters& gp, unsigned int padding)
+bool GridIndex::nextGridElement(const GridParameters& gp, unsigned int padding)
 {
     return recursionCount(padding, numOfDimensions_, gp);
 }
 
-bool GridIndex::recursionCount(unsigned int padding, unsigned int curDimension, GridParameters& gp)
+bool GridIndex::recursionCount(unsigned int padding, unsigned int curDimension, const GridParameters& gp)
 {
     if (curDimension > 0)
     {
