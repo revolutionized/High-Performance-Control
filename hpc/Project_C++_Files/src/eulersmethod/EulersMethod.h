@@ -35,7 +35,7 @@ public:
 
     ~EulersMethod();
 
-    void solve(fcn2dep& fcnDerivative,
+    void solve(v_fcn2dep& fcnDerivative,
                const double* initGuess,
                MarkovChainApproximation* mca);
 

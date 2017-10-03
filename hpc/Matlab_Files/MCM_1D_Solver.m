@@ -16,7 +16,7 @@ global h x_discretised
 % L = 3; % arbitrary length
 % bound_loc_west = 0;
 % bound_loc_east = L;
-xdiv = 0.1;
+xdiv = 0.01;
 x_discretised = 0:xdiv:3;
 % x_discretised = linspace(bound_loc_west, bound_loc_east, (1/h)+1); % discretised 1-D state space
 a_diags = sigma(0)*ones(length(x_discretised),1);

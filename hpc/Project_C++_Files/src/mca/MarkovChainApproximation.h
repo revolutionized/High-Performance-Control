@@ -11,8 +11,9 @@
 #include "MarkovChainParameters.h"
 #include "multidim/GridIndex.h"
 
-typedef const std::function<void(double*, double, double*)> fcn2dep;
-typedef const std::function<void(double*, double*)> fcn1dep;
+typedef const std::function<void(double*, double, double*)> v_fcn2dep;
+typedef const std::function<void(double*, double*)> v_fcn1dep;
+typedef const std::function<double(double*, double)> d_fcn2dep;
 
 class MarkovChainApproximation
 {
@@ -32,9 +33,9 @@ public:
     /// \param diffFunction The sigma function is often called the diffusion term and often represents represents the
     /// noise / stochastic disturbance being introduced to the system. It is given as a std::function and takes a double
     /// array representing the diffusion applied to each subsystem
-    void computeMarkovApproximation(fcn2dep& costFunction,
-                                    fcn2dep& driftFunction,
-                                    fcn1dep& diffFunction);
+    void computeMarkovApproximation(d_fcn2dep& costFunction,
+                                    v_fcn2dep& driftFunction,
+                                    v_fcn1dep& diffFunction);
 
     /// \brief Finds the most optimal control value at a specific location along arbitrary one-dimensional grid.
     ///
@@ -62,14 +63,14 @@ private:
     /// \param costFunctionK Same cost function given at the computeMarkovApproximation call
     /// \param diffFunction Same sigma function given at the computeMarkovApproximation call
     void solveTransitionSummations(const GridIndex& gridIndices,
-                                   fcn2dep& costFunctionK,
-                                   fcn2dep& driftFunction,
-                                   fcn1dep& diffFunction);
+                                   d_fcn2dep& costFunctionK,
+                                   v_fcn2dep& driftFunction,
+                                   v_fcn1dep& diffFunction);
 
     /// \brief B function with no control dependency
     /// See "Numerical Methods for Stochastic Control Problems in Continuous Time" (H. J. Kushner) pg. 99 where it gives
     /// B(x) = max_{\alpha\el U} \abs{b(x,\alpha)}.
-    void B_func(fcn2dep& driftFunction,
+    void B_func(v_fcn2dep& driftFunction,
                 double* gridLocation,
                 double alpha,
                 double* out);
@@ -87,8 +88,8 @@ private:
                                  uint currentDimension,
                                  double alpha,
                                  double den,
-                                 fcn2dep& driftFunction,
-                                 fcn1dep& diffFunction);
+                                 v_fcn2dep& driftFunction,
+                                 v_fcn1dep& diffFunction);
 
     /// \brief Returns the value of $ p^{h}(x, y | \alpha) $
     /// \param currentLocation Current value of grid location
@@ -169,5 +170,7 @@ private:
     std::vector<double>* pHat_ = nullptr;
     std::vector<double>* vProbs_ = nullptr;
     std::vector<std::vector<double>>* vSummed_ = nullptr;
+
+    void printProgress(float progress);
 };
 

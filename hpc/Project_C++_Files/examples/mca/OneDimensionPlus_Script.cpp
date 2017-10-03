@@ -122,7 +122,8 @@ int main()
     markovCA.computeMarkovApproximation(costFunction2, driftFunction2, diffFunction2);
 
     // We use the EulersMethod class again
-    euler = new EulersMethod(epm);
+    // TODO: Check if we should give it epm or mcp
+    euler = new EulersMethod(mcp);
 
     // The EulersMethod1D function has a solve that allows you to pass it the MCA object, and thus it utilises the MCA
     // ODE state space results and optimal control results.
@@ -134,10 +135,10 @@ int main()
     markovEulerFile.open("MarkovEulerResult.dat", std::ofstream::out);
     if (markovEulerFile.good())
     {
-        exactEulerFileStream << "t f" << NEWL;
+        markovEulerFile << "t f" << NEWL;
         euler->saveSolution(markovEulerFile);
     }
-    exactEulerFileStream.close();
+    markovEulerFile.close();
 
     // Also create file with MCA optimal control data
     ofstream markovControlFileStream;

@@ -135,7 +135,7 @@ void GridParameters::assertParameters(const double* gridLeftBound,
     // Now we ensure appropriate grid lengths have been given
     for (int ii = 0; ii < numOfGridDimensions_; ++ii)
     {
-        assert(deltaGrid[ii] > 1);
+        assert(deltaGrid[ii] > 0.0);
     }
 }
 

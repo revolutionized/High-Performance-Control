@@ -24,7 +24,10 @@ set(SOURCE_FILES
         src/multidim/GridIndex.h
         examples/mca/Functions2.h
         examples/mca/Functions2.cpp
-        examples/mca/OneDimensionPlus_Script.cpp src/multidim/GridParameters.cpp src/multidim/GridParameters.h)
+#        examples/mca/OneDimensionPlus_Script.cpp
+        examples/DubinsCar/DubinsCar_Example.cpp
+        src/multidim/GridParameters.cpp
+        src/multidim/GridParameters.h)
 
 
 # To use the C3 library, uncomment below

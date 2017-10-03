@@ -47,7 +47,7 @@ EulersMethod::~EulersMethod()
     delete solution_;
 }
 
-void EulersMethod::solve(fcn2dep& fcnDerivative,
+void EulersMethod::solve(v_fcn2dep& fcnDerivative,
                          const double* initGuess,
                          MarkovChainApproximation* mca)
 {
@@ -129,7 +129,7 @@ void EulersMethod::setupSolution()
 
 void EulersMethod::printProgress(float progress) const
 {
-    int barWidth = 70;
+    int barWidth = 50;
 
     std::cout << "[";
     auto pos = static_cast<int>(barWidth * progress);

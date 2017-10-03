@@ -23,9 +23,9 @@ double exactMinimumControl2(const double* x)
     return -k*x[0];
 }
 
-void costFunction2(const double* x, double alpha, double* out)
+double costFunction2(const double* x, double alpha)
 {
-    out[0] = 5*pow(x[0],2.0) + pow(alpha, 2.0);
+    return 5*pow(x[0],2.0) + pow(alpha, 2.0);
 }
 
 void driftFunction2(const double* x, double alpha, double* out)

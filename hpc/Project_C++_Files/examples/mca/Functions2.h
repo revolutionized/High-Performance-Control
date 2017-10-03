@@ -16,7 +16,7 @@ void problemOde2(const double* x, double u, double* out);
 
 double exactMinimumControl2(const double* x);
 
-void costFunction2(const double* x, double alpha, double* out);
+double costFunction2(const double* x, double alpha);
 
 void driftFunction2(const double* x, double alpha, double* out);
 

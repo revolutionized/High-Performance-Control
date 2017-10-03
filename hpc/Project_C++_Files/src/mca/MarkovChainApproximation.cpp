@@ -34,6 +34,8 @@ MarkovChainApproximation::MarkovChainApproximation(MarkovChainParameters& mcp,
     // Set precision of std::out
     std::setprecision(precision);
 
+    cout << "Allocating needed memory" << NEWL;
+
     if (!memoryModeRAM_)
     {
         // Instead of using in-RAM arrays, we write to a fstreams (files),
@@ -88,6 +90,8 @@ MarkovChainApproximation::MarkovChainApproximation(MarkovChainParameters& mcp,
 
         GridIndex mainGridIndices(mcp.getNumOfGrids());
 
+        uint progressCount = 0;
+
         do
         {
             GridIndex oldVGridIndices(mainGridIndices);
@@ -96,6 +100,9 @@ MarkovChainApproximation::MarkovChainApproximation(MarkovChainParameters& mcp,
             newV_->insert(std::make_pair(newVGridIndices, initStateGuess));
             GridIndex alphaGridIndices(mainGridIndices);
             minAlpha_->insert(std::make_pair(alphaGridIndices,0.0));
+
+            // We say its the total number of grid elements + 1 since the 1% remaining is for vectors below
+            printProgress(static_cast<float>(++progressCount)/ static_cast<float>(mcp.getGridLengthAccumulation() + 1));
         } while (mainGridIndices.nextGridElement(mcp));
     }
 
@@ -107,6 +114,9 @@ MarkovChainApproximation::MarkovChainApproximation(MarkovChainParameters& mcp,
     {
         ii.reserve(mcp_.getNumOfGrids());
     }
+
+    // Show that memory allocation has been finished
+    cout << "\r" << "Finished allocating memory." << "\r";
 }
 
 bool MarkovChainApproximation::allStreamsOpen()
@@ -159,9 +169,9 @@ MarkovChainApproximation::~MarkovChainApproximation()
     delete vSummed_;
 }
 
-void MarkovChainApproximation::computeMarkovApproximation(fcn2dep& costFunction,
-                                                          fcn2dep& driftFunction,
-                                                          fcn1dep& diffFunction)
+void MarkovChainApproximation::computeMarkovApproximation(d_fcn2dep& costFunction,
+                                                          v_fcn2dep& driftFunction,
+                                                          v_fcn1dep& diffFunction)
 {
     // Current index of grid (e.g. for a 3x3 system we are at (0,1,3) or something
     GridIndex gridIndices(mcp_.getNumOfGrids());
@@ -171,7 +181,7 @@ void MarkovChainApproximation::computeMarkovApproximation(fcn2dep& costFunction,
     uint iterations = 0;
 
     std::setprecision(4); // For showing relative error approximate to 4 decimals
-    cout << "==== Starting Markov Chain Approximation ====" << endl;
+    cout << "==== Starting Markov Chain Approximation ====" << NEWL;
 
     if (memoryModeRAM_)
     {
@@ -183,6 +193,7 @@ void MarkovChainApproximation::computeMarkovApproximation(fcn2dep& costFunction,
             // Add a padding of 1 since we don't want to be on boundaries
             gridIndices.resetToOrigin(1);
 
+            uint progressCount = 0;
 
             do
             {
@@ -191,6 +202,10 @@ void MarkovChainApproximation::computeMarkovApproximation(fcn2dep& costFunction,
 
                 // Find the minimum alpha term for the DPE
                 determineMinimumAlpha(gridIndices);
+
+                // Here we print progress of a single iteration
+                printProgress(++progressCount/static_cast<float>(mcp_.getGridLengthAccumulation()));
+
             } while (gridIndices.nextGridElement(mcp_, 1));
 
             // Calculate relative error between newV and oldV
@@ -198,10 +213,8 @@ void MarkovChainApproximation::computeMarkovApproximation(fcn2dep& costFunction,
 
             // Display progress
             cout << "Markov chain iteration complete. Relative error: " << relErr;
-            cout << ". Iteration: " << iterations + 1 << "\r";
+            cout << ". Iteration: " << iterations + 1 << NEWL;
             iterations++;
-
-
 
         } while (relErr > mcp_.getRelativeError() && iterations < mcp_.getMaxIterations());
     }
@@ -216,9 +229,9 @@ void MarkovChainApproximation::computeMarkovApproximation(fcn2dep& costFunction,
 }
 
 void MarkovChainApproximation::solveTransitionSummations(const GridIndex& gridIndices,
-                                                         fcn2dep& costFunctionK,
-                                                         fcn2dep& driftFunction,
-                                                         fcn1dep& diffFunction)
+                                                         d_fcn2dep& costFunctionK,
+                                                         v_fcn2dep& driftFunction,
+                                                         v_fcn1dep& diffFunction)
 {
     double gridLocation[mcp_.getNumOfGrids()];
     for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
@@ -248,19 +261,18 @@ void MarkovChainApproximation::solveTransitionSummations(const GridIndex& gridIn
         }
 
         // k for each dimension
-        double k[mcp_.getNumOfGrids()];
-        costFunctionK(gridLocation, alpha, k);
+        double k = costFunctionK(gridLocation, alpha);
 
         for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
         {
             solveTransitionProbabilities(gridIndices, ii, alpha, den[ii], driftFunction, diffFunction);
             // Solve dynamic programming equation
-            (*vSummed_)[ai][ii] = kahanSum(vProbs_) + delta_t[ii] * k[ii];
+            (*vSummed_)[ai][ii] = kahanSum(vProbs_) + delta_t[ii] * k;
         }
     }
 }
 
-void MarkovChainApproximation::B_func(fcn2dep& driftFunction,
+void MarkovChainApproximation::B_func(v_fcn2dep& driftFunction,
                                       double* gridLocation,
                                       double alpha,
                                       double* out)
@@ -276,8 +288,8 @@ void MarkovChainApproximation::solveTransitionProbabilities(const GridIndex& cur
                                                             uint currentDimension,
                                                             double alpha,
                                                             double den,
-                                                            fcn2dep& driftFunction,
-                                                            fcn1dep& diffFunction)
+                                                            v_fcn2dep& driftFunction,
+                                                            v_fcn1dep& diffFunction)
 {
     // Begin with probability of getting anything but itself as 0 (meaning itself is 1)
     int stay = 2;
@@ -369,7 +381,7 @@ void MarkovChainApproximation::determineMinimumAlpha(const GridIndex& gridIndice
     // We search for the alpha that minimises the dynamic programming equation, and return it's index
     uint minIndex = 0;
     // For every alpha considered, we need to compare which creates the minimum tensor norm
-    double minNorm = pow(10.0, 3);
+    double minNorm = pow(10.0, 3.0);
     double currentNorm;
 
 
@@ -437,12 +449,7 @@ GridIndex MarkovChainApproximation::getGridIndicesClosestTo(double* gridLocation
     currentGridIndex.resetToOrigin();
     GridIndex closestGridIndex(currentGridIndex);
 
-    double minDistance = 0;
-    for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
-    {
-        minDistance += pow(mcp_.getDeltaGrid(ii) * 1.5, 2.0);
-    }
-    minDistance = sqrt(minDistance);
+    double minDistance = pow(10.0, 3.0);
 
     // Basically we do a relative distance check between each point (just using Pythagoras theorem /
     // tensor Frobenius norm)
@@ -486,4 +493,28 @@ void MarkovChainApproximation::printAlpha(std::ofstream& stream)
     {
         stream << (*minAlpha_)[newGrid] << NEWL;
     } while (newGrid.nextGridElement(mcp_));
+}
+
+void MarkovChainApproximation::printProgress(float progress)
+{
+    int barWidth = 50;
+
+    std::cout << "[";
+    auto pos = static_cast<int>(barWidth * progress);
+    for (int ii = 0; ii < barWidth; ++ii) {
+        if (ii < pos)
+        {
+            std::cout << "=";
+        }
+        else if (ii == pos)
+        {
+            std::cout << ">";
+        }
+        else
+        {
+            std::cout << " ";
+        }
+    }
+    std::cout << "] " << "%" << int(progress * 100.0) << "\r";
+    std::cout.flush();
 }

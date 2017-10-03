@@ -16,8 +16,8 @@ B=1;
 L = 3; % arbitrary length
 bound_loc_west = 0;
 bound_loc_east = L;
-h = 10^-3; % delta_t (not delta x)
-t = linspace(bound_loc_west, bound_loc_east, (1/h) + 1); % discretised 1-D state space 
+h = 10^-4; % delta_t (not delta x)
+t = linspace(bound_loc_west, bound_loc_east, 10^4 + 1); % discretised 1-D state space 
 % Ricatti equation is
 %		A'S + SA - (SB)R^(-1)(B'S) + Q = 0
 % Thus we get S = 1, and the controller is

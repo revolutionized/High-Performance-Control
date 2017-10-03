@@ -44,7 +44,7 @@ MarkovChainParameters::MarkovChainParameters(const double* gridLeftBound,
 {
     // Assert appropriate parameters have been provided
     assert(alphaLeftBound < alphaRightBound);
-    assert(deltaAlpha > 0);
+    assert(deltaAlpha > 0.0);
 
     // Set up alpha discretisation
     alphaLength_ = static_cast<uint>(floor((alphaRightBound - alphaLeftBound)/deltaAlpha));
@@ -100,6 +100,26 @@ double MarkovChainParameters::getRelativeError()
 double MarkovChainParameters::getH()
 {
     return h_;
+}
+
+unsigned int MarkovChainParameters::getGridLengthAccumulation()
+{
+    uint total = 1;
+    for (int ii = 0; ii < getNumOfGrids(); ++ii)
+    {
+        total *= getGridLength(ii);
+    }
+    return total;
+}
+
+unsigned int MarkovChainParameters::getThreadCount() const
+{
+    return threadCount_;
+}
+
+void MarkovChainParameters::setThreadCount(unsigned int threadCount)
+{
+    MarkovChainParameters::threadCount_ = threadCount;
 }
 
 

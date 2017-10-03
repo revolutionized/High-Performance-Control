@@ -85,9 +85,15 @@ struct MarkovChainParameters : public GridParameters
     double getRelativeError();
 
     double getH();
+
+    unsigned int getGridLengthAccumulation();
+
+    unsigned int getThreadCount() const;
+
+    void setThreadCount(unsigned int threadCount);
+
 private:
     // FIELDS --------------------------------------------------------------------------------------------------- FIELDS
-
     /// Length of the alpha array (could also use sizeof, but this is for convenience)
     unsigned int alphaLength_;
     /// \brief Lower bound of the alpha array.
@@ -99,6 +105,7 @@ private:
     double deltaAlpha_;
     /// Scalar approximation parameter that determines
     double h_;
+
     /// \brief Smallest relative error before markov approximation exits.
     ///
     /// The markov chain continues to repeat until its relative error (norm_inf |oldV - newV|) is less than this value.
@@ -109,6 +116,9 @@ private:
     /// If the max number of iterations has been reached and the relative error still isn't less than epsErr_, then the
     /// markov approximation method will finish
     unsigned int maxIterations_ = 100;
+    unsigned int threadCount_ = 1;
+
+public:
 };
 
 
