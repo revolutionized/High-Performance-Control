@@ -445,41 +445,59 @@ double MarkovChainApproximation::getMarkovControlFunction(double* gridLocation)
 GridIndex MarkovChainApproximation::getGridIndicesClosestTo(double* gridLocation)
 {
     // Set initial guess to the origin
-    GridIndex currentGridIndex(mcp_.getNumOfGrids());
-    currentGridIndex.resetToOrigin();
-    GridIndex closestGridIndex(currentGridIndex);
+//    GridIndex currentGridIndex(mcp_.getNumOfGrids());
+//    currentGridIndex.resetToOrigin();
+    GridIndex closestGridIndex(mcp_.getNumOfGrids());
+    closestGridIndex.resetToOrigin();
 
-    double minDistance = pow(10.0, 3.0);
+    double minDistance = MAXFLOAT;
 
     // Basically we do a relative distance check between each point (just using Pythagoras theorem /
     // tensor Frobenius norm)
-    do
+    for (auto& minAlpha : *minAlpha_)
     {
-        double currentGridLoc[mcp_.getNumOfGrids()];
-        double currentDistance = 0;
+        double euclidianDistance = 0.0;
+
+        // Find current grid location
+        double currentGridLocation[mcp_.getNumOfGrids()];
         for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
         {
-            currentGridLoc[ii] = mcp_.getGridAtIndex(currentGridIndex.getIndexOfDim(ii), ii);
-            if (currentGridLoc[ii] > 0 && gridLocation[ii] < 0)
-            {
-                currentDistance += pow(gridLocation[ii] - currentGridLoc[ii], 2.0);
-            } else
-            {
-                currentDistance += pow(currentGridLoc[ii] - gridLocation[ii], 2.0);
-            }
+            currentGridLocation[ii] = mcp_.getGridAtIndex(minAlpha.first.getIndexOfDim(ii), ii);
+            // Compare it to the location we are given
+            euclidianDistance += pow(currentGridLocation[ii] - gridLocation[ii], 2.0);
         }
-        currentDistance = sqrt(currentDistance);
+        // Find total euclidean distance
+        euclidianDistance = sqrt(euclidianDistance);
 
-        if (currentDistance < minDistance)
+        if (euclidianDistance < minDistance)
         {
-            for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
-            {
-                closestGridIndex.setGridIndexOfDim(ii, currentGridIndex.getIndexOfDim(ii));
-            }
-            minDistance = currentDistance;
+            minDistance = euclidianDistance;
+            closestGridIndex = minAlpha.first;
         }
 
-    } while (currentGridIndex.nextGridElement(mcp_));
+    }
+
+//    do
+//    {
+//        double currentGridLoc[mcp_.getNumOfGrids()];
+//        double currentDistance = 0;
+//        for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
+//        {
+//            currentGridLoc[ii] = mcp_.getGridAtIndex(currentGridIndex.getIndexOfDim(ii), ii);
+//            currentDistance += pow(gridLocation[ii] - currentGridLoc[ii], 2.0);
+//        }
+//        currentDistance = sqrt(currentDistance);
+//
+//        if (currentDistance < minDistance)
+//        {
+//            for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
+//            {
+//                closestGridIndex.setGridIndexOfDim(ii, currentGridIndex.getIndexOfDim(ii));
+//            }
+//            minDistance = currentDistance;
+//        }
+//
+//    } while (currentGridIndex.nextGridElement(mcp_));
 
     return closestGridIndex;
 }

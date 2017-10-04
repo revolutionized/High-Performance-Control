@@ -25,7 +25,7 @@ int main()
     // First we consider the exact method ----------------------------------------------- //
 
     // We set up the "grid" or space we will be considering
-    auto euler_grid_size = static_cast<unsigned int>(pow(10, 3));
+    auto euler_grid_size = static_cast<unsigned int>(pow(10, 4));
     double startingBound = 0.0;
     double exitingBound = 3.0;
     double initGuessPtr[1] = {2.0};
@@ -71,23 +71,16 @@ int main()
     {
         exactControlFileStream << "t u" << NEWL;
 
-        // Need to add the minimum control for each point of grid
-        GridIndex gridIndices(epm.getNumOfGrids());
-        gridIndices.resetToOrigin();
-        double gridLocation[epm.getNumOfGrids()];
-
-        // Fill each grid point
-        do
+        for (int ii = 0; ii < epm.getGridLength(0); ++ii)
         {
-            for (uint ii = 0; ii < epm.getNumOfGrids(); ++ii)
-            {
-                gridLocation[ii] = epm.getGridAtIndex(gridIndices.getIndexOfDim(ii), ii);
-                exactControlFileStream << gridLocation[ii] << " ";
-            }
+            // Plot time
+            exactControlFileStream << epm.getGridAtIndex(ii, 0) << " ";
 
-            exactControlFileStream << fcnExactControl(gridLocation) << NEWL;
-        } while (gridIndices.nextGridElement(epm));
-
+            // Plot control value
+            double x[] = {startingBound};
+            euler->getSolutionAt(ii,x);
+            exactControlFileStream << exactMinimumControl2(x) << NEWL;
+        }
     }
     exactControlFileStream.close();
 
@@ -98,20 +91,19 @@ int main()
     // Now test the Markov Approximation method ----------------------------------------- //
 
     // We again set up the "grid" or space we will be considering
-    unsigned int markov_grid_size[1];
-    markov_grid_size[0] = {3*static_cast<unsigned int>(pow(10, 1)) + 1};
-    auto markov_alpha_discretisation_size = 2*static_cast<unsigned int>(pow(10,2)) + 1;
-    double markov_grid_rightbound = 1.0;
+    double deltaMarkovGrid[1] = {0.01};
+    double deltaAlpha = 0.01;
+    double markov_grid_rightbound = 3.0;
     double m_gridRightBound[1] = {markov_grid_rightbound};
-    double alphaStartingBound = -3.0;
+    double alphaStartingBound = -2.5;
     double alphaExitingBound = 0.5;
-    double h = pow(10.0, -3.0);
+    double h = pow(10.0, -4.0);
     MarkovChainParameters mcp(gridLeftBound,
                               m_gridRightBound,
-                              markov_grid_size,
+                              deltaMarkovGrid,
                               alphaStartingBound,
                               alphaExitingBound,
-                              markov_alpha_discretisation_size,
+                              deltaAlpha,
                               h,
                               1);
 
@@ -122,8 +114,7 @@ int main()
     markovCA.computeMarkovApproximation(costFunction2, driftFunction2, diffFunction2);
 
     // We use the EulersMethod class again
-    // TODO: Check if we should give it epm or mcp
-    euler = new EulersMethod(mcp);
+    euler = new EulersMethod(epm);
 
     // The EulersMethod1D function has a solve that allows you to pass it the MCA object, and thus it utilises the MCA
     // ODE state space results and optimal control results.
@@ -143,27 +134,23 @@ int main()
     // Also create file with MCA optimal control data
     ofstream markovControlFileStream;
     markovControlFileStream.open("MarkovControl.dat", std::ofstream::out);
+    markovControlFileStream.precision(4);
     if (markovControlFileStream.good())
     {
         markovControlFileStream << "t u" << NEWL;
 
-        // Need to add the minimum control for each point of grid
-        GridIndex gridIndices(epm.getNumOfGrids());
-        gridIndices.resetToOrigin();
-        double gridLocation[epm.getNumOfGrids()];
+        // Plot control value
+        double x[] = {startingBound};
+        markovControlFileStream << x[0] << "0" /*init control guess of 0*/ << NEWL;
 
-        // Fill each grid point
-        do
+        for (int ii = 1; ii < epm.getGridLength(0); ++ii)
         {
-            for (uint ii = 0; ii < epm.getNumOfGrids(); ++ii)
-            {
-                gridLocation[ii] = epm.getGridAtIndex(gridIndices.getIndexOfDim(ii), ii);
-                markovControlFileStream << gridLocation[ii] << " ";
-            }
+            // Plot time
+            markovControlFileStream << epm.getGridAtIndex(ii, 0) << " ";
 
-            markovControlFileStream << markovCA.getMarkovControlFunction(gridLocation) << NEWL;
-        } while (gridIndices.nextGridElement(epm));
-
+            euler->getSolutionAt(ii-1,x);
+            markovControlFileStream << markovCA.getMarkovControlFunction(x) << NEWL;
+        }
     }
     markovControlFileStream.close();
 
@@ -172,7 +159,11 @@ int main()
 
     // Plot the data using gnuplot ------------------------------------------------------ //
     // The following command just requests to run a shell script with the commands in the file ../viewplots.gla
+#ifdef _WIN32
+    // Todo: Put code to run GNU plot on windwos
+#else
     system("cd .. && ./viewplots.gla");
+#endif
 
     // Finished with no errors ---------------------------------------------------------- //
     cout << " ~~~ Finished executing ~~~ ";

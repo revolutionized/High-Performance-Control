@@ -19,6 +19,8 @@ public:
 
     ~GridIndex();
 
+    GridIndex& operator= (const GridIndex&);
+
     void resetToOrigin(unsigned int padding = 0);
 
     bool nextGridElement(const GridParameters& gp, unsigned int padding = 0);

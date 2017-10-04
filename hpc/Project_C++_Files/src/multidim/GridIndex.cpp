@@ -23,6 +23,20 @@ GridIndex::~GridIndex()
     delete gridIndices_;
 }
 
+GridIndex& GridIndex::operator=(const GridIndex& rhs)
+{
+    if (this != &rhs)
+    {
+        GridIndex::numOfDimensions_ = rhs.numOfDimensions_;
+        for (int ii = 0; ii < numOfDimensions_; ++ii)
+        {
+            GridIndex::gridIndices_[ii] = rhs.gridIndices_[ii];
+        }
+    }
+
+    return *this;
+}
+
 void GridIndex::resetToOrigin(unsigned int padding)
 {
     for (unsigned int ii = 0; ii < numOfDimensions_; ++ii)
@@ -40,17 +54,6 @@ bool GridIndex::recursionCount(unsigned int padding, unsigned int curDimension, 
 {
     if (curDimension > 0)
     {
-        auto test = gp.getGridLength(0);
-        auto test1 = gp.getGridLength(1);
-        auto test2 = gp.getGridLength(2);
-        auto test3 = curDimension;
-        auto test4 = gridIndices_[2];
-        auto test5 = gridIndices_[1];
-        auto test6 = gridIndices_[0];
-        if (test6 > 17 && test5 > 23 && test4 > 23)
-        {
-            auto test7 = true;
-        }
         if (gridIndices_[curDimension-1] < gp.getGridLength(curDimension-1) - padding - 1)
         {
             gridIndices_[curDimension-1]++;
