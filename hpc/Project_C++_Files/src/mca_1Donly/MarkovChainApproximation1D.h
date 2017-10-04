@@ -11,7 +11,7 @@
 /// 
 /// This is the so called 'library' for solving a nonlinear stochastic problem using the Markov Approximation Method. It
 /// does not solve anything more than a one-dimensional problem.
-class MarkovChainApproximation
+class MarkovChainApproximation1D
 {
 public:
     /// \brief The class must be started with all the appropriate bounds. 
@@ -27,7 +27,7 @@ public:
     /// \param h This is the level of detail that the Markov Approximation considers (for convergence we want h <
     /// grid spacing (delta x)
     /// \param initGuess The initial guess for the value of the function we are approximating (at x = 0)
-    explicit MarkovChainApproximation(double alphaLeftBound,
+    explicit MarkovChainApproximation1D(double alphaLeftBound,
                                       double alphaRightBound,
                                       unsigned int alphaLength,
                                       double gridLeftBound,
@@ -37,7 +37,7 @@ public:
                                       double initGuess);
 
     /// \brief Deallocates all memory that this class needed
-    ~MarkovChainApproximation();
+    ~MarkovChainApproximation1D();
 
     /// \brief Main function to call when ready to compute the function approximation using the MCA method.
     /// \param costFunction The cost function is given as a std::function and takes two doubles (x, alpha) and returns 
@@ -145,6 +145,10 @@ private:
     /// \brief Searches and finds the index of the grid array that most closely matches with the value of x given
     /// \param x Can be anything, but for proper use should be between the lower and upper bounds of the grid
     unsigned int getGridIndexClosestTo(double x);
+
+
+    // FIELDS --------------------------------------------------------------------------------------------------- FIELDS
+
     /// Length of the alpha array (could also use sizeof, but this is for convenience)
     unsigned int alphaLength_;
     /// \brief Lower bound of the grid array. 

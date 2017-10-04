@@ -2,8 +2,8 @@
 // Created by david on 22/08/17.
 //
 
-#include "MarkovChainApproximation.h"
-#include "Functions.h"
+#include "MarkovChainApproximation1D.h"
+#include "../../examples/mca_1Donly/Functions.h"
 #include <cassert>
 #include <cmath>
 #include <iostream>
@@ -16,7 +16,7 @@
 
 using namespace std;
 
-MarkovChainApproximation::MarkovChainApproximation(double alphaLeftBound,
+MarkovChainApproximation1D::MarkovChainApproximation1D(double alphaLeftBound,
                                                    double alphaRightBound,
                                                    unsigned int alphaLength,
                                                    double gridLeftBound,
@@ -61,14 +61,14 @@ MarkovChainApproximation::MarkovChainApproximation(double alphaLeftBound,
     maxIterations_ = 100;
 }
 
-MarkovChainApproximation::~MarkovChainApproximation()
+MarkovChainApproximation1D::~MarkovChainApproximation1D()
 {
     delete oldV_;
     delete newV_;
     delete minAlpha_;
 }
 
-void MarkovChainApproximation::computeMarkovApproximation(const std::function<double(double, double)>& costFunction,
+void MarkovChainApproximation1D::computeMarkovApproximation(const std::function<double(double, double)>& costFunction,
                                                           const std::function<double(double)>& sigmaFunction)
 {
     vector<double> v_probabilities(3);
@@ -99,7 +99,7 @@ void MarkovChainApproximation::computeMarkovApproximation(const std::function<do
     } while (relErr > epsErr_ && iterations < maxIterations_);
 }
 
-double MarkovChainApproximation::B_func(double x, double alpha)
+double MarkovChainApproximation1D::B_func(double x, double alpha)
 {
     // B_func results already produced, just need to find max
 //    return max(abs(b_result));
@@ -112,7 +112,7 @@ double MarkovChainApproximation::B_func(double x, double alpha)
 }
 
 
-double MarkovChainApproximation::getGridAtIndex(unsigned int index)
+double MarkovChainApproximation1D::getGridAtIndex(unsigned int index)
 {
 //    assert(index < newV_.size());
 
@@ -120,7 +120,7 @@ double MarkovChainApproximation::getGridAtIndex(unsigned int index)
     return gridPosition;
 }
 
-double MarkovChainApproximation::getAlphaAtIndex(unsigned int index)
+double MarkovChainApproximation1D::getAlphaAtIndex(unsigned int index)
 {
     assert(index < alphaLength_);
 
@@ -128,7 +128,7 @@ double MarkovChainApproximation::getAlphaAtIndex(unsigned int index)
     return alphaPosition;
 }
 
-double MarkovChainApproximation::transitionProb(double x,
+double MarkovChainApproximation1D::transitionProb(double x,
                                                 double y,
                                                 double alpha,
                                                 double den,
@@ -157,7 +157,7 @@ double MarkovChainApproximation::transitionProb(double x,
     return result;
 }
 
-double MarkovChainApproximation::kahanSum(const vector<double>& doubleArray, size_t size_n)
+double MarkovChainApproximation1D::kahanSum(const vector<double>& doubleArray, size_t size_n)
 {
     // See https://en.wikipedia.org/wiki/Kahan_summation_algorithm
 
@@ -174,7 +174,7 @@ double MarkovChainApproximation::kahanSum(const vector<double>& doubleArray, siz
     return sum;
 }
 
-void MarkovChainApproximation::determineTransitionProbabilities(vector<double>& v_probabilities,
+void MarkovChainApproximation1D::determineTransitionProbabilities(vector<double>& v_probabilities,
                                                                 unsigned int xi,
                                                                 double alpha,
                                                                 double den,
@@ -205,7 +205,7 @@ void MarkovChainApproximation::determineTransitionProbabilities(vector<double>& 
     v_probabilities[yi] = p[yi] * (*oldV_)[xi];
 }
 
-void MarkovChainApproximation::determineTransitionSummations(vector<double>& v_probabilities,
+void MarkovChainApproximation1D::determineTransitionSummations(vector<double>& v_probabilities,
                                                              unsigned int xi,
                                                              vector<double>& v_summed,
                                                              const std::function<double(double, double)>& costFunctionK,
@@ -227,7 +227,7 @@ void MarkovChainApproximation::determineTransitionSummations(vector<double>& v_p
     }
 }
 
-void MarkovChainApproximation::determineMinimumAlpha(const vector<double>& v_summed, unsigned int x_index)
+void MarkovChainApproximation1D::determineMinimumAlpha(const vector<double>& v_summed, unsigned int x_index)
 {
     // Find minimum v_summed and its index
     int minIndex = 0;
@@ -244,7 +244,7 @@ void MarkovChainApproximation::determineMinimumAlpha(const vector<double>& v_sum
     (*minAlpha_)[x_index] = getAlphaAtIndex(static_cast<unsigned int>(minIndex));
 }
 
-double MarkovChainApproximation::getRelativeError(const vector<double>* firstArr,
+double MarkovChainApproximation1D::getRelativeError(const vector<double>* firstArr,
                                                   const vector<double>* secondArr,
                                                   unsigned int arrLength)
 {
@@ -264,12 +264,12 @@ double MarkovChainApproximation::getRelativeError(const vector<double>* firstArr
     return maxValue;
 }
 
-double MarkovChainApproximation::getMarkovControlFunction(double x)
+double MarkovChainApproximation1D::getMarkovControlFunction(double x)
 {
     return (*minAlpha_)[getGridIndexClosestTo(x)];
 }
 
-unsigned int MarkovChainApproximation::getGridIndexClosestTo(double x)
+unsigned int MarkovChainApproximation1D::getGridIndexClosestTo(double x)
 {
     unsigned int closestGridIndex = 0;
     double minDistance = abs(getGridAtIndex(0) - x);

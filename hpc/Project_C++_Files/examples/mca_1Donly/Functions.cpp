@@ -48,7 +48,7 @@ int diff(double t,
     out[0] = 0.0;
 
     // Set gradient values to 0.0 as well
-    if (grad != NULL)
+    if (grad != nullptr)
     {
         for (size_t ii = 0; ii < 1*1; ii++)
         {
@@ -73,7 +73,7 @@ int drift(double t,
     // Give the function definitions for x_dot and u
     out[0] = A*(x[1]) + B*u[0];
 
-    if (jac != NULL)
+    if (jac != nullptr)
     {
         jac[0] = 1.0; // TODO: find out what this is for
     }
@@ -95,7 +95,7 @@ int stagecost(double t,
     *out = 0.0; // First reset it to 0.0
     *out = 5*pow((x[1]),2.0) + pow((u[0]),2.0);
 
-    if (grad!= NULL){
+    if (grad != nullptr){
         grad[0] = 0.0;
     }
 

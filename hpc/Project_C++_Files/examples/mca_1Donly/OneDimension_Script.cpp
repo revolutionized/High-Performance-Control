@@ -13,11 +13,11 @@
 #include <cassert>
 
 #include "Functions.h"
-#include "MarkovChainApproximation.h"
-#include "EulerMethod.h"
+#include "../../src/mca_1Donly/MarkovChainApproximation1D.h"
+#include "../../src/eulersmethod_1Donly/EulersMethod1D.h"
 extern "C"
 {
-//#include "c3/c3.h" // Already included in the c3sc file
+#include "c3/c3.h" // Already included in the c3sc file
 #include "c3sc/c3sc.h"
 #include "c3sc/bellman.h"
 #include "c3sc/valuefunc.h"
@@ -43,7 +43,7 @@ int main()
     };
 
     // We use the Euler Method class (giving it it's bounding grid)
-    EulerMethod euler(startingBound, exitingBound, euler_grid_size);
+    EulersMethod1D euler(startingBound, exitingBound, euler_grid_size);
     // And then solve the ODE using Euler's method and the function for the derivative we put together before
     euler.solve(fcnDerivativeExact, initGuess);
 
@@ -89,7 +89,7 @@ int main()
     const std::function<double(double,double)> fcnCost = costFunction;
 
     // Markov Chain Approximation (MCA) will solve the optimal cost values and ODE values at each point
-    MarkovChainApproximation markovCA(alphaStartingBound,
+    MarkovChainApproximation1D markovCA(alphaStartingBound,
                                       alphaExitingBound,
                                       markov_alpha_discretisation_size,
                                       startingBound,
@@ -102,7 +102,7 @@ int main()
     const std::function<double(double, double)> fcnOde = problemOde;
     markovCA.computeMarkovApproximation(fcnCost, fcnSigma);
 
-    // The EulerMethod function has a solve that allows you to pass it the MCA object, and thus it utilises the MCA
+    // The EulersMethod1D function has a solve that allows you to pass it the MCA object, and thus it utilises the MCA
     // ODE state space results and optimal control results.
     const std::function<double(double, double)> fcnDerivativeMarkov = problemOde;
     euler.solve(fcnDerivativeMarkov, markovCA, initGuess);
@@ -136,6 +136,10 @@ int main()
 
     // ----------------------------------------------------------------------------------------------------------- C3 //
     // Now test the C3 (Tensor decomposition method) ------------------------------------ //
+
+    // SO THE C3 CODE DOES EXECUTE BUT HAVEN'T QUITE FIGURED OUT HOW TO USE THE PRODUCED RESULTS FOR PLOTTING OR
+    // CONFIRMATION ETC.
+
     // First we set all the "scene" parameters
     size_t dim = 2;
     size_t dx = dim;
@@ -169,7 +173,7 @@ int main()
     c3control_add_stagecost(c3c,stagecost);
     c3control_add_boundcost(c3c,boundcost);
 
-    // ???
+    // ??? Copied from the Dubins_car_new example, so don't fully understand it all ???
     char filename[256];
     sprintf(filename, "%s.c3", "cost");
     double ** xgrid = c3control_get_xgrid(c3c);
