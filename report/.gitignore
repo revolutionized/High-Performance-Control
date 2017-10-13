@@ -1,0 +1,7 @@
+# Ignores all latex and texstudio generated items
+*.aux
+*.log
+*.out
+*.pdf
+*.gz
+*.toc
