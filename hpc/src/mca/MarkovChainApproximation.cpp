@@ -116,7 +116,7 @@ MarkovChainApproximation::MarkovChainApproximation(MarkovChainParameters& mcp,
     }
 
     // Show that memory allocation has been finished
-    cout << "\r" << "Finished allocating memory." << "\r";
+    cout << "\r" << "Finished allocating memory.                                " << NEWL;
 }
 
 bool MarkovChainApproximation::allStreamsOpen()

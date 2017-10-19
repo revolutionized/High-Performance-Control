@@ -79,9 +79,9 @@ int main()
 //    double deltaAlpha = 1;
     uint alphaLength = 3;
     // always set h to be smaller than discretisation of the state space and time
-    double h = pow(10.0, -4);
+    double h = pow(10.0, -3);
     MarkovChainParameters mcp(leftBound, rightBound, gridLength, alphaStart, alphaEnd, alphaLength, h, 3);
-    mcp.setMaxIterations(100); // Max 100 iterations
+    mcp.setMaxIterations(10); // Max 100 iterations
     mcp.setMinError(pow(10.0, -5.0));
 
     // Set the initial guess
@@ -135,8 +135,7 @@ int main()
     markovControlFileStream.close();
 
     // Plot the data using gnuplot ------------------------------------------------------ //
-    // The following command just requests to run a shell script with the commands in the file ../viewplots.gla
-    system("cd .. && ./viewplots.gla");
+    // TODO: Put in plotting commands
 
     // Finished with no errors ---------------------------------------------------------- //
     cout << " ~~~ Finished executing ~~~ ";

@@ -160,9 +160,10 @@ int main()
     // Plot the data using gnuplot ------------------------------------------------------ //
     // The following command just requests to run a shell script with the commands in the file ../viewplots.gla
 #ifdef _WIN32
-    // Todo: Put code to run GNU plot on windwos
+    system("copy ../examples/mca/viewplots.bat viewplots.bat");
+    system("./viewplots.bat");
 #else
-    system("cd .. && ./viewplots.gla");
+    system("cp ../examples/mca/viewplots.gla viewplots.gla && ./viewplots.gla");
 #endif
 
     // Finished with no errors ---------------------------------------------------------- //
