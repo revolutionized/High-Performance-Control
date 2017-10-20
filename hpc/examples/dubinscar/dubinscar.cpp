@@ -1,12 +1,12 @@
 //
 // Created by David on 2/10/2017.
 //
+#include "dubinscar.h"
 
 #include <iostream>
 #include <functional>
 #include <fstream>
 #include <cmath>
-#include <mca/Functions2.h>
 
 #include "mca/MarkovChainApproximation.h"
 #include "eulersmethod/EulersMethod.h"
@@ -61,8 +61,11 @@ void odeFunction(double* x, double alpha, double* out)
     out[2] = drift[2] + diff[2];
 }
 
-int main()
+void ExecuteDubinsCar(unsigned int iterations)
 {
+    // Executing of Dubins car example -------------------------------------------------- //
+    cout << " ~~~ Starting execution of Dubin's Car ~~~ " << NEWL;
+
     // ------------------------------------------------------------------------------------------------------- MARKOV //
     // Using Markov Approximation to solve  ----------------------------------------- //
 
@@ -79,9 +82,9 @@ int main()
 //    double deltaAlpha = 1;
     uint alphaLength = 3;
     // always set h to be smaller than discretisation of the state space and time
-    double h = pow(10.0, -3);
+    double h = pow(10.0, -5);
     MarkovChainParameters mcp(leftBound, rightBound, gridLength, alphaStart, alphaEnd, alphaLength, h, 3);
-    mcp.setMaxIterations(10); // Max 100 iterations
+    mcp.setMaxIterations(iterations);
     mcp.setMinError(pow(10.0, -5.0));
 
     // Set the initial guess
@@ -136,8 +139,4 @@ int main()
 
     // Plot the data using gnuplot ------------------------------------------------------ //
     // TODO: Put in plotting commands
-
-    // Finished with no errors ---------------------------------------------------------- //
-    cout << " ~~~ Finished executing ~~~ ";
-    return 0;
 }

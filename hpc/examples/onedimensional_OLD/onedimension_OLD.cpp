@@ -12,7 +12,7 @@
 #include <fstream>
 #include <cassert>
 
-#include "Functions.h"
+#include "Functions_OLD.h"
 #include "../../src/mca_1Donly/MarkovChainApproximation1D.h"
 #include "../../src/eulersmethod_1Donly/EulersMethod1D.h"
 extern "C"

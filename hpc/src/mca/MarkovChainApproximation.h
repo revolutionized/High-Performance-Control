@@ -170,7 +170,5 @@ private:
     std::vector<double>* pHat_ = nullptr;
     std::vector<double>* vProbs_ = nullptr;
     std::vector<std::vector<double>>* vSummed_ = nullptr;
-
-    void printProgress(float progress);
 };
 

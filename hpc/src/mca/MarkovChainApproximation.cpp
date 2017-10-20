@@ -8,6 +8,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
+#include <utilities/ProgressBar.h>
 
 using std::cout;
 using std::endl;
@@ -15,12 +16,20 @@ using std::string;
 using std::vector;
 using std::map;
 
+
 #ifdef _WIN32
 // New line for Windows
+#ifndef NEWL
 #define NEWL "\r\n"
+#endif
+
 #else
+
 // New line for Unix
+#ifndef NEWL
 #define NEWL "\n"
+#endif
+
 #endif
 
 
@@ -34,7 +43,7 @@ MarkovChainApproximation::MarkovChainApproximation(MarkovChainParameters& mcp,
     // Set precision of std::out
     std::setprecision(precision);
 
-    cout << "Allocating needed memory" << NEWL;
+    cout << "Allocating needed memory";
 
     if (!memoryModeRAM_)
     {
@@ -90,8 +99,6 @@ MarkovChainApproximation::MarkovChainApproximation(MarkovChainParameters& mcp,
 
         GridIndex mainGridIndices(mcp.getNumOfGrids());
 
-        uint progressCount = 0;
-
         do
         {
             GridIndex oldVGridIndices(mainGridIndices);
@@ -100,9 +107,6 @@ MarkovChainApproximation::MarkovChainApproximation(MarkovChainParameters& mcp,
             newV_->insert(std::make_pair(newVGridIndices, initStateGuess));
             GridIndex alphaGridIndices(mainGridIndices);
             minAlpha_->insert(std::make_pair(alphaGridIndices,0.0));
-
-            // We say its the total number of grid elements + 1 since the 1% remaining is for vectors below
-            printProgress(static_cast<float>(++progressCount)/ static_cast<float>(mcp.getGridLengthAccumulation() + 1));
         } while (mainGridIndices.nextGridElement(mcp));
     }
 
@@ -116,7 +120,7 @@ MarkovChainApproximation::MarkovChainApproximation(MarkovChainParameters& mcp,
     }
 
     // Show that memory allocation has been finished
-    cout << "\r" << "Finished allocating memory.                                " << NEWL;
+    cout << "\r" << "Finished allocating memory.";
 }
 
 bool MarkovChainApproximation::allStreamsOpen()
@@ -181,7 +185,9 @@ void MarkovChainApproximation::computeMarkovApproximation(d_fcn2dep& costFunctio
     uint iterations = 0;
 
     std::setprecision(4); // For showing relative error approximate to 4 decimals
-    cout << "==== Starting Markov Chain Approximation ====" << NEWL;
+    cout << "\r==== Starting Markov Chain Approximation ====" << NEWL;
+
+    float totalCountToComplete = mcp_.getGridLengthAccumulation() + 1;
 
     if (memoryModeRAM_)
     {
@@ -193,7 +199,9 @@ void MarkovChainApproximation::computeMarkovApproximation(d_fcn2dep& costFunctio
             // Add a padding of 1 since we don't want to be on boundaries
             gridIndices.resetToOrigin(1);
 
+            // Monitor progress
             uint progressCount = 0;
+            int percentage_complete = 0;
 
             do
             {
@@ -203,8 +211,15 @@ void MarkovChainApproximation::computeMarkovApproximation(d_fcn2dep& costFunctio
                 // Find the minimum alpha term for the DPE
                 determineMinimumAlpha(gridIndices);
 
-                // Here we print progress of a single iteration
-                printProgress(++progressCount/static_cast<float>(mcp_.getGridLengthAccumulation()));
+                // If progress has jumped up more than 1% then redraw the progress bar
+                // To reduce multiple prints of same percentage, just skip until a different percentage is reached
+                auto prog = int(static_cast<float>(++progressCount*100.0/totalCountToComplete));
+                if (prog != percentage_complete)
+                {
+                    percentage_complete = prog;
+                    // We say its the total number of grid elements + 1 since the 1% remaining is for vectors below
+                    utils::printProgress(percentage_complete);
+                }
 
             } while (gridIndices.nextGridElement(mcp_, 1));
 
@@ -416,7 +431,8 @@ void MarkovChainApproximation::determineMinimumAlpha(const GridIndex& gridIndice
 
 double MarkovChainApproximation::getRelativeError()
 {
-    double temp = 0.0;
+    double temp;
+    double maxInf = 0.0;
 
     GridIndex gridIndices(mcp_.getNumOfGrids());
     gridIndices.resetToOrigin();
@@ -424,17 +440,12 @@ double MarkovChainApproximation::getRelativeError()
     for (auto& oldV : *oldV_)
     {
         // Perform Frobenius tensor norm
-        temp += pow(fabs(oldV.second) - fabs((*newV_)[oldV.first]), 2.0);
+
+        temp = fabs(oldV.second - (*newV_)[oldV.first]);
+        maxInf = temp > maxInf ? temp : maxInf;
     }
 
-//    do
-//    {
-//        // Perform Frobenius tensor norm
-//        temp += pow(fabs((*oldV_)[gridIndices]) - fabs((*newV_)[gridIndices]), 2.0);
-//    } while (gridIndices.nextGridElement(mcp_));
-
-    temp /= 10;
-    return sqrt(temp);
+    return maxInf;
 }
 
 double MarkovChainApproximation::getMarkovControlFunction(double* gridLocation)
@@ -513,26 +524,4 @@ void MarkovChainApproximation::printAlpha(std::ofstream& stream)
     } while (newGrid.nextGridElement(mcp_));
 }
 
-void MarkovChainApproximation::printProgress(float progress)
-{
-    int barWidth = 50;
 
-    std::cout << "[";
-    auto pos = static_cast<int>(barWidth * progress);
-    for (int ii = 0; ii < barWidth; ++ii) {
-        if (ii < pos)
-        {
-            std::cout << "=";
-        }
-        else if (ii == pos)
-        {
-            std::cout << ">";
-        }
-        else
-        {
-            std::cout << " ";
-        }
-    }
-    std::cout << "] " << "%" << int(progress * 100.0) << "\r";
-    std::cout.flush();
-}

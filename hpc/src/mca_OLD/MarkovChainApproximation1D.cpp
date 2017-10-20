@@ -3,7 +3,7 @@
 //
 
 #include "MarkovChainApproximation1D.h"
-#include "../../examples/mca_1Donly/Functions.h"
+#include "mca_1Donly/Functions_OLD.h"
 #include <cassert>
 #include <cmath>
 #include <iostream>

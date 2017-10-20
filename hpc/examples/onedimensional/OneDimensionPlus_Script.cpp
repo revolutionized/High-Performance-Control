@@ -5,13 +5,15 @@
  * version). It also shows how to access the Euler library for n-dimensional problems.
  */
 
+#include "OneDimensionPlus_Script.h"
+
 #include <cmath>
 #include <cstring>
 #include <iostream>
 #include <functional>
 #include <fstream>
 
-#include "Functions2.h"
+#include "OneDimension_Functions.h"
 #include "mca/MarkovChainApproximation.h"
 #include "eulersmethod/EulersMethod.h"
 
@@ -19,7 +21,7 @@ using std::cout;
 using std::endl;
 using std::ofstream;
 
-int main()
+void ExecuteOneDimension(unsigned int iterations)
 {
     // -------------------------------------------------------------------------------------------------------- EXACT //
     // First we consider the exact method ----------------------------------------------- //
@@ -106,9 +108,10 @@ int main()
                               deltaAlpha,
                               h,
                               1);
+    mcp.setMaxIterations(iterations);
+    mcp.setMinError(pow(10.0, -5.0));
 
     double markovInitGuess = 2.0;
-
     // Markov Chain Approximation (MCA) will solve the optimal cost values and ODE values at each point
     MarkovChainApproximation markovCA(mcp, markovInitGuess, 4, true);
     markovCA.computeMarkovApproximation(costFunction2, driftFunction2, diffFunction2);
@@ -160,14 +163,13 @@ int main()
     // Plot the data using gnuplot ------------------------------------------------------ //
     // The following command just requests to run a shell script with the commands in the file ../viewplots.gla
 #ifdef _WIN32
-    system("copy ../examples/mca/viewplots.bat viewplots.bat");
+    system("copy ../examples/onedimensional/viewplots.bat viewplots.bat");
     system("./viewplots.bat");
 #else
-    system("cp ../examples/mca/viewplots.gla viewplots.gla && ./viewplots.gla");
+    system("cp ../examples/onedimensional/viewplots.gla viewplots.gla && ./viewplots.gla");
 #endif
 
     // Finished with no errors ---------------------------------------------------------- //
     cout << " ~~~ Finished executing ~~~ ";
-    return 0;
 }
 

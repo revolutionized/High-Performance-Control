@@ -58,6 +58,10 @@ void EulersMethod::solve(v_fcn2dep& fcnDerivative,
         (*solution_)[0][ii] = initGuess[ii];
     }
 
+    // Monitor progress
+    int percentage_complete = 0;
+    float totalCountToComplete = timeLength_-1;
+
     for (unsigned int ii = 1; ii < timeLength_; ++ii)
     {
         // Solve derivative
@@ -77,8 +81,16 @@ void EulersMethod::solve(v_fcn2dep& fcnDerivative,
             (*solution_)[ii][jj] = (*solution_)[ii-1][jj] + xDash[jj]*deltaTime_;
         }
 
-        // Print progress to screen
-        printProgress(static_cast<float>(ii) / static_cast<float>(timeLength_-1));
+
+        // If progress has jumped up more than 1% then redraw the progress bar
+        // To reduce multiple prints of same percentage, just skip until a different percentage is reached
+        auto prog = int(static_cast<float>(ii*100.0/totalCountToComplete));
+        if (prog != percentage_complete)
+        {
+            percentage_complete = prog;
+            // We say its the total number of grid elements + 1 since the 1% remaining is for vectors below
+            utils::printProgress(percentage_complete);
+        }
     }
 
     // Print one new line since our progress bar uses "\r" which returns to the beginning, and then
@@ -125,28 +137,4 @@ void EulersMethod::setupSolution()
     {
         ii = new double[dimensions_];
     }
-}
-
-void EulersMethod::printProgress(float progress) const
-{
-    int barWidth = 50;
-
-    std::cout << "[";
-    auto pos = static_cast<int>(barWidth * progress);
-    for (int ii = 0; ii < barWidth; ++ii) {
-        if (ii < pos)
-        {
-            std::cout << "=";
-        }
-        else if (ii == pos)
-        {
-            std::cout << ">";
-        }
-        else
-        {
-            std::cout << " ";
-        }
-    }
-    std::cout << "] " << "%" << int(progress * 100.0) << "\r";
-    std::cout.flush();
 }

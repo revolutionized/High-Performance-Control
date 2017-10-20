@@ -2,7 +2,7 @@
 // Created by david on 23/09/17.
 //
 
-#include "Functions2.h"
+#include "OneDimension_Functions.h"
 
 // Globals
 int A = -2;

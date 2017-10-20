@@ -1,19 +1,29 @@
 cmake_minimum_required(VERSION 3.5)
-project(BebProject)
+project(hpc)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 11)
 
-include_directories(src)
 include_directories(examples)
+set(EXAMPLE_FILES
+        examples/onedimensional/OneDimension_Functions.h
+        examples/onedimensional/OneDimension_Functions.cpp
+        examples/onedimensional/OneDimensionPlus_Script.cpp
+        examples/onedimensional/OneDimensionPlus_Script.h
+        examples/dubinscar/dubinscar.cpp
+        examples/dubinscar/dubinscar.h)
+
+include_directories(3rdparty)
 
 # For 1-D only example uncomment below
-#set(SOURCE_FILES src/mca_1Donly/EulersMethod1D.cpp src/mca_1Donly/EulersMethod1D.h
-#        src/mca_1Donly/MarkovChainApproximation1D.cpp src/mca_1Donly/MarkovChainApproximation1D.h
-#        examples/mca_1Donly/Functions.h examples/mca_1Donly/Functions.cpp
-#        examples/mca_1Donly/OneDimension_Script.cpp)
+#set(SOURCE_FILES src/onedimensional_OLD/EulersMethod1D.cpp src/onedimensional_OLD/EulersMethod1D.h
+#        src/onedimensional_OLD/MarkovChainApproximation1D.cpp src/onedimensional_OLD/MarkovChainApproximation1D.h
+#        examples/onedimensional_OLD/Functions.h examples/onedimensional_OLD/Functions.cpp
+#        examples/onedimensional_OLD/OneDimension_Script.cpp)
 
+include_directories(src)
 set(SOURCE_FILES
+        src/main/main.cpp
         src/mca/MarkovChainApproximation.cpp
         src/mca/MarkovChainApproximation.h
         src/mca/MarkovChainParameters.h
@@ -22,12 +32,10 @@ set(SOURCE_FILES
         src/eulersmethod/EulersMethod.h
         src/multidim/GridIndex.cpp
         src/multidim/GridIndex.h
-#        examples/mca/Functions2.h
-#        examples/mca/Functions2.cpp
-#        examples/mca/OneDimensionPlus_Script.cpp
-        examples/DubinsCar/DubinsCar_Example.cpp
         src/multidim/GridParameters.cpp
-        src/multidim/GridParameters.h)
+        src/multidim/GridParameters.h
+        src/utilities/ProgressBar.h)
+
 
 
 # To use the C3 library, uncomment below
@@ -73,7 +81,7 @@ endif (${USEC3})
 #include_directories(${MATLAB_DIR}/bin/glnxa64/)
 #link_directories(${MATLAB_DIR}/bin/glnxa64)
 
-add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${C_SOURCE_FILES})
+add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${EXAMPLE_FILES} ${C_SOURCE_FILES})
 
 if (${USEC3})
     target_link_libraries(${PROJECT_NAME} c3)

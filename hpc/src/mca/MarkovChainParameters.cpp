@@ -56,7 +56,10 @@ MarkovChainParameters::MarkovChainParameters(const MarkovChainParameters& mcp)
           h_(mcp.h_),
           alphaLeftBound_(mcp.alphaLeftBound_),
           alphaLength_(mcp.alphaLength_),
-          deltaAlpha_(mcp.deltaAlpha_)
+          deltaAlpha_(mcp.deltaAlpha_),
+          maxIterations_(mcp.maxIterations_),
+          epsErr_(mcp.epsErr_),
+          threadCount_(mcp.threadCount_)
 {}
 
 // SETTERS ------------------------------------------------------------------------------------------------- SETTERS

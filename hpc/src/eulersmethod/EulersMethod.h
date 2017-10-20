@@ -16,6 +16,12 @@
 #define NEWL "\n"
 #endif
 
+// Pre-declaration
+namespace utils
+{
+    void printProgress(int progressComplete);
+}
+
 class EulersMethod
 {
 public:
@@ -44,8 +50,6 @@ public:
     void getSolutionAt(int index, double* out) const;
 
 private:
-
-    void printProgress(float progress) const;
 
     void setupSolution();
 
