@@ -88,7 +88,7 @@ void ExecuteDubinsCar(unsigned int iterations)
     mcp.setMinError(pow(10.0, -5.0));
 
     // Set the initial guess
-    double markovInitGuess = 2.0;
+    double markovInitGuess = 0.1;
     MarkovChainApproximation markovCA(mcp, markovInitGuess, 4, true);
     markovCA.computeMarkovApproximation(costFunction, driftFunction, diffFunction);
 
@@ -115,7 +115,7 @@ void ExecuteDubinsCar(unsigned int iterations)
     markovControlFileStream.open("ControlResult.dat", std::ofstream::out);
     if (markovControlFileStream.good())
     {
-        markovControlFileStream << "t u" << NEWL;
+        markovControlFileStream << "x y theta u" << NEWL;
 
         // Need to add the minimum control for each point of grid
         GridIndex gridIndices(dim);
