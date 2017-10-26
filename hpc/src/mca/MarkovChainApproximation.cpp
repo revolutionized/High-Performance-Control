@@ -28,10 +28,14 @@ using std::map;
 // New line for Unix
 #ifndef NEWL
 #define NEWL "\n"
-#endif
+#endif // NEWL
 
-#endif
+#endif //_WIN32
 
+// Also MAXFLOAT not defined in Unix
+#ifndef MAXFLOAT
+#define MAXFLOAT 1.79769e+308
+#endif
 
 MarkovChainApproximation::MarkovChainApproximation(MarkovChainParameters& mcp,
                                                    double initStateGuess,
@@ -248,6 +252,7 @@ void MarkovChainApproximation::solveTransitionSummations(const GridIndex& gridIn
                                                          v_fcn2dep& driftFunction,
                                                          v_fcn1dep& diffFunction)
 {
+    // gridLocation basically represents the actual x, y, z (etc.) value that we are at
     double gridLocation[mcp_.getNumOfGrids()];
     for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
     {
@@ -278,9 +283,23 @@ void MarkovChainApproximation::solveTransitionSummations(const GridIndex& gridIn
         // k for each dimension
         double k = costFunctionK(gridLocation, alpha);
 
+
+        double gridLoc[mcp_.getNumOfGrids()];
+        mcp_.getGridAtIndices(gridIndices, gridLoc);
+
+        // Solve initial component of numerator
+        double num[mcp_.getNumOfGrids()];
+        diffFunction(gridLoc, num);
+        // Solve 'b_part'
+        double b_part[mcp_.getNumOfGrids()];
+        driftFunction(gridLoc, alpha, b_part);
+
+
         for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
         {
-            solveTransitionProbabilities(gridIndices, ii, alpha, den[ii], driftFunction, diffFunction);
+            double currentNum = num[ii];
+            double currentbPart = b_part[ii];
+            solveTransitionProbabilities(gridIndices, ii, alpha, den[ii], driftFunction, diffFunction, 0, 0);
             // Solve dynamic programming equation
             (*vSummed_)[ai][ii] = kahanSum(vProbs_) + delta_t[ii] * k;
         }
@@ -299,35 +318,27 @@ void MarkovChainApproximation::B_func(v_fcn2dep& driftFunction,
     }
 }
 
-void MarkovChainApproximation::solveTransitionProbabilities(const GridIndex& currentIndices,
-                                                            uint currentDimension,
-                                                            double alpha,
-                                                            double den,
-                                                            v_fcn2dep& driftFunction,
-                                                            v_fcn1dep& diffFunction)
+void
+MarkovChainApproximation::solveTransitionProbabilities(const GridIndex& currentIndices,
+                                                       uint currentDimension,
+                                                       double alpha,
+                                                       double den,
+                                                       v_fcn2dep& driftFunction,
+                                                       v_fcn1dep& diffFunction,
+                                                       double currentNumerator,
+                                                       double currentBpart)
 {
     // Begin with probability of getting anything but itself as 0 (meaning itself is 1)
     int stay = 2;
     (*pHat_)[stay] = 1;
 
-    double gridLoc[mcp_.getNumOfGrids()];
-    double num[mcp_.getNumOfGrids()];
-    double b_part[mcp_.getNumOfGrids()];
-    // Get
-    mcp_.getGridAtIndices(currentIndices, gridLoc);
-
-    // Solve numerator
-    diffFunction(gridLoc, num);
-    // Solve b_part
-    driftFunction(gridLoc, alpha, b_part);
-
     // First consider the case it moves up the current dimension plane
     int lower = 0;
-    (*pHat_)[lower] = transitionProb(false, num[currentDimension], den, b_part[currentDimension]);
+    (*pHat_)[lower] = transitionProb(false, currentNumerator, den, currentBpart);
 
     // Now consider the case it moves down the current dimension plane
     int upper = 1;
-    (*pHat_)[upper] = transitionProb(true, num[currentDimension], den, b_part[currentDimension]);
+    (*pHat_)[upper] = transitionProb(true, currentNumerator, den, currentBpart);
 
     // Finally we consider the case that it does not move at all (which is just the complement)
     (*pHat_)[stay] -= (*pHat_)[lower] + (*pHat_)[upper];
@@ -335,6 +346,9 @@ void MarkovChainApproximation::solveTransitionProbabilities(const GridIndex& cur
     // TODO: Remove this if no problems occur, this is just for error checking
     if ((*pHat_)[stay] < 0)
     {
+        auto test_lower = (*pHat_)[lower];
+        auto test_upper = (*pHat_)[upper];
+        auto test_stay = (*pHat_)[stay];
         cout << "ERROR: Remaining probability less than 0" << endl;
     }
 
@@ -487,29 +501,6 @@ GridIndex MarkovChainApproximation::getGridIndicesClosestTo(double* gridLocation
         }
 
     }
-
-//    do
-//    {
-//        double currentGridLoc[mcp_.getNumOfGrids()];
-//        double currentDistance = 0;
-//        for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
-//        {
-//            currentGridLoc[ii] = mcp_.getGridAtIndex(currentGridIndex.getIndexOfDim(ii), ii);
-//            currentDistance += pow(gridLocation[ii] - currentGridLoc[ii], 2.0);
-//        }
-//        currentDistance = sqrt(currentDistance);
-//
-//        if (currentDistance < minDistance)
-//        {
-//            for (uint ii = 0; ii < mcp_.getNumOfGrids(); ++ii)
-//            {
-//                closestGridIndex.setGridIndexOfDim(ii, currentGridIndex.getIndexOfDim(ii));
-//            }
-//            minDistance = currentDistance;
-//        }
-//
-//    } while (currentGridIndex.nextGridElement(mcp_));
-
     return closestGridIndex;
 }
 

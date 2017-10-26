@@ -11,9 +11,9 @@
 #include "mca/MarkovChainApproximation.h"
 #include "eulersmethod/EulersMethod.h"
 
-#define W_1 0.0;
-#define W_2 0.0;
-#define W_3 0.0;
+#define W_1 0.02;
+#define W_2 0.02;
+#define W_3 0.02;
 
 using std::cout;
 using std::ofstream;
@@ -56,9 +56,9 @@ void odeFunction(double* x, double alpha, double* out)
     double diff[3];
     diffFunction(x, diff);
 
-    out[0] = drift[0] + diff[0];
-    out[1] = drift[1] + diff[1];
-    out[2] = drift[2] + diff[2];
+    out[0] = drift[0] + diff[0]; // dx = cos(theta) + dw_x
+    out[1] = drift[1] + diff[1]; // dy = sin(theta) + dw_y
+    out[2] = drift[2] + diff[2]; // dtheta = alpha + dw_theta*10^-2
 }
 
 void ExecuteDubinsCar(unsigned int iterations)
@@ -85,10 +85,10 @@ void ExecuteDubinsCar(unsigned int iterations)
     double h = pow(10.0, -5);
     MarkovChainParameters mcp(leftBound, rightBound, gridLength, alphaStart, alphaEnd, alphaLength, h, 3);
     mcp.setMaxIterations(iterations);
-    mcp.setMinError(pow(10.0, -5.0));
+    mcp.setMinError(pow(10.0, -3.0));
 
     // Set the initial guess
-    double markovInitGuess = 0.1;
+    double markovInitGuess = 1.0;
     MarkovChainApproximation markovCA(mcp, markovInitGuess, 4, true);
     markovCA.computeMarkovApproximation(costFunction, driftFunction, diffFunction);
 
@@ -122,7 +122,12 @@ void ExecuteDubinsCar(unsigned int iterations)
         gridIndices.resetToOrigin();
         double gridLocation[dim];
 
-        // Fill each grid point
+        // Monitor progress
+        float totalCountToComplete = mcp.getGridLengthAccumulation() + 1;
+        uint progressCount = 0;
+        int percentage_complete = 0;
+
+        // Write each grid point and it's optimal 'control'
         do
         {
             for (uint ii = 0; ii < mcp.getNumOfGrids(); ++ii)
@@ -130,6 +135,17 @@ void ExecuteDubinsCar(unsigned int iterations)
                 gridLocation[ii] = mcp.getGridAtIndex(gridIndices.getIndexOfDim(ii), ii);
                 markovControlFileStream << gridLocation[ii] << " ";
             }
+
+            // If progress has jumped up more than 1% then redraw the progress bar
+            // To reduce multiple prints of same percentage, just skip until a different percentage is reached
+            auto prog = int(static_cast<float>(++progressCount*100.0/totalCountToComplete));
+            if (prog != percentage_complete)
+            {
+                percentage_complete = prog;
+                // We say its the total number of grid elements + 1 since the 1% remaining is for vectors below
+                utils::printProgress(percentage_complete);
+            }
+
 
             markovControlFileStream << markovCA.getMarkovControlFunction(gridLocation) << NEWL;
         } while (gridIndices.nextGridElement(mcp));

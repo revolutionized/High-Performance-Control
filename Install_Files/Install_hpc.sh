@@ -1,4 +1,4 @@
-cd hpc/Project_C++_Files
+cd hpc
 mkdir build
 cd build
 cmake ..

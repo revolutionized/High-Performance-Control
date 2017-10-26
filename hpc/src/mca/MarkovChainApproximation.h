@@ -89,7 +89,9 @@ private:
                                  double alpha,
                                  double den,
                                  v_fcn2dep& driftFunction,
-                                 v_fcn1dep& diffFunction);
+                                 v_fcn1dep& diffFunction,
+                                 double currentNumerator,
+                                 double currentBpart);
 
     /// \brief Returns the value of $ p^{h}(x, y | \alpha) $
     /// \param currentLocation Current value of grid location

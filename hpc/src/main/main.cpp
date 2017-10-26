@@ -10,6 +10,7 @@
 #include "onedimensional/OneDimensionPlus_Script.h"
 
 // Want to hide cursor for console
+#ifdef _WIN32
 #include <windows.h>
 void hidecursor(bool hide = true)
 {
@@ -26,6 +27,15 @@ void hidecursor(bool hide = true)
     }
     SetConsoleCursorInfo(consoleHandle, &info);
 }
+
+#else
+
+void hidecursor(bool hide = true)
+{
+    fputs(hide ? "\e[?25l" : "\e[?25h", stdout);
+}
+
+#endif
 
 using std::cout;
 
