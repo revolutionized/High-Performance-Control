@@ -111,6 +111,7 @@ void EulersMethod::saveSolution(std::ofstream& stream)
         // Print the value that the solution has at each dimension
         for (int jj = 0; jj < dimensions_; jj++)
         {
+            auto test = sol[jj];
             stream << sol[jj] << " ";
         }
 

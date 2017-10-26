@@ -1,0 +1,1 @@
+gnuplot windowsGnu.p -p

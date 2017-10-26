@@ -189,7 +189,7 @@ void MarkovChainApproximation::computeMarkovApproximation(d_fcn2dep& costFunctio
     uint iterations = 0;
 
     std::setprecision(4); // For showing relative error approximate to 4 decimals
-    cout << "\r==== Starting Markov Chain Approximation ====" << NEWL;
+    cout << "\r==== Performing Markov Chain Approximation ====" << NEWL;
 
     float totalCountToComplete = mcp_.getGridLengthAccumulation() + 1;
 
@@ -259,6 +259,7 @@ void MarkovChainApproximation::solveTransitionSummations(const GridIndex& gridIn
         gridLocation[ii] = mcp_.getGridAtIndex(gridIndices.getIndexOfDim(ii), ii);
     }
 
+
     for (uint ai = 0; ai < mcp_.getAlphaLength(); ++ai)
     {
         double alpha = mcp_.getAlphaAtIndex(ai);
@@ -283,7 +284,6 @@ void MarkovChainApproximation::solveTransitionSummations(const GridIndex& gridIn
         // k for each dimension
         double k = costFunctionK(gridLocation, alpha);
 
-
         double gridLoc[mcp_.getNumOfGrids()];
         mcp_.getGridAtIndices(gridIndices, gridLoc);
 
@@ -299,7 +299,14 @@ void MarkovChainApproximation::solveTransitionSummations(const GridIndex& gridIn
         {
             double currentNum = num[ii];
             double currentbPart = b_part[ii];
-            solveTransitionProbabilities(gridIndices, ii, alpha, den[ii], driftFunction, diffFunction, 0, 0);
+            solveTransitionProbabilities(gridIndices,
+                                         ii,
+                                         alpha,
+                                         den[ii],
+                                         driftFunction,
+                                         diffFunction,
+                                         currentNum,
+                                         currentbPart);
             // Solve dynamic programming equation
             (*vSummed_)[ai][ii] = kahanSum(vProbs_) + delta_t[ii] * k;
         }
@@ -346,10 +353,15 @@ MarkovChainApproximation::solveTransitionProbabilities(const GridIndex& currentI
     // TODO: Remove this if no problems occur, this is just for error checking
     if ((*pHat_)[stay] < 0)
     {
+        double val = currentIndices.getIndexOfDim(currentDimension);
+
         auto test_lower = (*pHat_)[lower];
         auto test_upper = (*pHat_)[upper];
         auto test_stay = (*pHat_)[stay];
         cout << "ERROR: Remaining probability less than 0" << endl;
+
+        auto test = transitionProb(false, currentNumerator, den, currentBpart);
+        auto stop = false;
     }
 
     // We need to match the current index to the same that y is pointing to (see that y represents the grid location,

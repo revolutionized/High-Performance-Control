@@ -11,9 +11,9 @@
 #include "mca/MarkovChainApproximation.h"
 #include "eulersmethod/EulersMethod.h"
 
-#define W_1 0.02;
-#define W_2 0.02;
-#define W_3 0.02;
+#define W_1 1.02;
+#define W_2 1.02;
+#define W_3 1.02;
 
 using std::cout;
 using std::ofstream;
@@ -74,7 +74,7 @@ void ExecuteDubinsCar(unsigned int iterations)
     // x is element of {-4, 4}, y is element of {-4, 4}, and theta is element of {-pi, pi}
     double leftBound[] = {-4.0, -4.0, -M_PI};
     double rightBound[] = {4.0, 4.0, M_PI};
-    uint gridLength[] = {100, 100, 100};
+    uint gridLength[] = {50, 50, 50};
 
     // Now the control space consists of three options U = {-1, 0, 1}
     double alphaStart = -1;
@@ -88,28 +88,31 @@ void ExecuteDubinsCar(unsigned int iterations)
     mcp.setMinError(pow(10.0, -3.0));
 
     // Set the initial guess
-    double markovInitGuess = 1.0;
+    double markovInitGuess = 0.5;
     MarkovChainApproximation markovCA(mcp, markovInitGuess, 4, true);
     markovCA.computeMarkovApproximation(costFunction, driftFunction, diffFunction);
 
     // We use the EulersMethod class again
-    EulersMethod euler(mcp);
+    EulersMethod euler(0.0, 1.0, (uint)(200), (uint)(3));
 
     // The EulersMethod1D function has a solve that allows you to pass it the MCA object, and thus it utilises the MCA
     // ODE state space results and optimal control results.
-    double initGuessPtr[dim] = {-1.0, -0.5, 0.0};
+    double initGuessPtr[dim] = {3.0, 2.5, -M_PI/2.0};
     euler.solve(odeFunction, initGuessPtr, &markovCA);
+
+    cout << "=== Writing results to file ===" << std::endl;
 
     // Create file with exact data (same as before)
     ofstream markovEulerFile;
     markovEulerFile.open("StateResult.dat", std::ofstream::out);
+
     if (markovEulerFile.good())
     {
-        markovEulerFile << "t f" << NEWL;
+        markovEulerFile << "t x y theta" << NEWL;
         euler.saveSolution(markovEulerFile);
     }
     markovEulerFile.close();
-
+/*
     // Also create file with MCA optimal control data
     ofstream markovControlFileStream;
     markovControlFileStream.open("ControlResult.dat", std::ofstream::out);
@@ -152,7 +155,7 @@ void ExecuteDubinsCar(unsigned int iterations)
 
     }
     markovControlFileStream.close();
-
+*/
     // Plot the data using gnuplot ------------------------------------------------------ //
     // TODO: Put in plotting commands
 }
