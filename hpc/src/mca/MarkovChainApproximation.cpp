@@ -118,6 +118,7 @@ MarkovChainApproximation::MarkovChainApproximation(MarkovChainParameters& mcp,
     pHat_ = new vector<double>(3); // 3 because always probability to move up one, down one, or stay in same place
     vProbs_ = new vector<double>(3); // Same as for pHat.
     vSummed_ = new vector<vector<double>>(mcp.getAlphaLength());
+    vSummed_ =
     for (auto& ii : *vSummed_)
     {
         ii.reserve(mcp_.getNumOfGrids());
@@ -193,6 +194,12 @@ void MarkovChainApproximation::computeMarkovApproximation(d_fcn2dep& costFunctio
 
     float totalCountToComplete = mcp_.getGridLengthAccumulation() + 1;
 
+    uint dimensions = mcp_.getNumOfGrids();
+    // Define transition probabilities
+    vector<double> phat;
+    phat.reserve(static_cast<unsigned long>(int(pow(3.0, dimensions))));
+    auto test = phat.size();
+
     if (memoryModeRAM_)
     {
         do
@@ -209,11 +216,113 @@ void MarkovChainApproximation::computeMarkovApproximation(d_fcn2dep& costFunctio
 
             do
             {
+
+                mcp_.getGridAtIndices(gridIndices, location);
+                // Get covariance matrix
+                double location[dimensions];
+                double sigmaVector[dimensions];
+                diffFunction(location, sigmaVector);
+
+                double covariance[dimensions][dimensions];
+
+                for (int ii = 0; ii < dimensions; ++ii)
+                {
+                    for (int jj = 0; jj < dimensions; ++jj)
+                    {
+                        covariance[ii][jj] = sigmaVector[ii]*sigmaVector[jj];
+                    }
+                }
+
+                // Test for weak diagonals of covariance matrix
+                for (int ii = 0; ii < dimensions; ++ii)
+                {
+                    double diag = covariance[ii][ii];
+                    for (int jj = 0; jj < dimensions && jj != ii; ++jj)
+                    {
+                        diag -= covariance[ii][jj];
+                    }
+                    if (diag < 0)
+                    {
+                        cout << "WARNING: Weak diagnonals!" << NEWL;
+                    }
+                }
+
+                // Loops through each alpha value
+                for (int ai = 0; ai < mcp_.getAlphaLength(); ++ai)
+                {
+                    double alpha = mcp_.getAlphaAtIndex(ai);
+
+
+                    double k = costFunction(location, alpha);
+
+                    double deltaT[dimensions]; // interpolation interval
+
+                    double b[dimensions]; // drift
+                    driftFunction(location, alpha, b);
+
+                    double Qhat[dimensions]; // normalising coefficient
+                    double diagSum = 0.0;
+                    for (int ii = 0; ii < dimensions; ++ii)
+                    {
+                        diagSum += covariance[ii][ii];
+                    }
+
+                    for (int ii = 0; ii < dimensions; ++ii)
+                    {
+                        Qhat[ii] = diagSum + mcp_.getH()*fabs(b[ii]);
+                        // Get off-diagonal components
+                        for (int jj = 0; jj < dimensions && jj != ii; ++jj)
+                        {
+                            Qhat[ii] -= covariance[ii][jj]/2.0;
+                        }
+
+                        deltaT[ii] = pow(mcp_.getH(), 2.0) / Qhat[ii];
+                    }
+
+                    // Transition probabilities
+                    for (int ii = 0; ii < dimensions; ++ii)
+                    {
+                        // Probability of transitioning either side of current dimension
+                        int thisDimensionPos = ii*int(pow(3.0, dimensions - 1));
+                        int thisDimensionNeg = thisDimensionPos + 1;
+                        double numPos = covariance[ii][ii]/2.0;
+                        double numNeg = numPos;
+                        for (int kk = 0; kk < dimensions && kk != ii; ++kk)
+                        {
+                            numPos -= fabs(covariance[ii][kk])/2.0;
+                            numNeg -= fabs(covariance[ii][kk])/2.0;
+                            double bPos = b[ii] > 0 ? b[ii] : 0;
+                            double bNeg = -b[ii] > 0 ? -b[ii] : 0;
+                            numNeg += mcp_.getH()*bPos;
+                            numNeg += mcp_.getH()*bNeg;
+                        }
+                        phat[thisDimensionPos] = numPos/Qhat[ii];
+                        phat[thisDimensionNeg] = numNeg/Qhat[ii];
+
+                        // Need to find the related gridIndices of moving up or down
+
+
+                        // Probability of transitioning either both +ve or both -ve along two axes
+                        for (int jj = 0; jj < dimensions && jj != ii; ++jj)
+                        {
+
+                        }
+
+                        // Probability of transitioning along one axis +ve and one axis -ve
+                    }
+
+                    auto test2 = phat.size();
+                }
+
+
+
+                /*
                 // Solve all summations for different alpha values
                 solveTransitionSummations(gridIndices, costFunction, driftFunction, diffFunction);
 
                 // Find the minimum alpha term for the DPE
                 determineMinimumAlpha(gridIndices);
+                */
 
                 // If progress has jumped up more than 1% then redraw the progress bar
                 // To reduce multiple prints of same percentage, just skip until a different percentage is reached
