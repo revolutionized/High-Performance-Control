@@ -11,9 +11,9 @@
 #include "mca/MarkovChainApproximation.h"
 #include "eulersmethod/EulersMethod.h"
 
-#define W_1 1.02;
-#define W_2 1.02;
-#define W_3 1.02;
+#define W_1 1e0;
+#define W_2 1e0;
+#define W_3 1e-2;
 
 using std::cout;
 using std::ofstream;
@@ -25,6 +25,13 @@ void driftFunction(double* x, double alpha, double* out)
     out[2] = alpha;
 }
 
+void diffusionMatrix(double* x, double* out)
+{
+    out[0] = W_1;   out[3] = 0.0;   out[6] = 0.0;
+    out[1] = 0.0;   out[4] = W_2;   out[7] = 0.0;
+    out[2] = 0.0;   out[5] = 0.0;   out[8] = W_3;
+}
+
 void diffFunction(double* x, double* out)
 {
     // Remove warning of unused x by casting it to void
@@ -32,7 +39,7 @@ void diffFunction(double* x, double* out)
 
     out[0] = W_1;
     out[1] = W_2;
-    out[2] = pow(10.0, -2.0)*W_3;
+    out[2] = W_3;
 }
 
 double costFunction(double* x, double alpha)
@@ -74,26 +81,27 @@ void ExecuteDubinsCar(unsigned int iterations)
     // x is element of {-4, 4}, y is element of {-4, 4}, and theta is element of {-pi, pi}
     double leftBound[] = {-4.0, -4.0, -M_PI};
     double rightBound[] = {4.0, 4.0, M_PI};
-    uint gridLength[] = {50, 50, 50};
+    uint gridLength[] = {100, 100, 100};
 
     // Now the control space consists of three options U = {-1, 0, 1}
     double alphaStart = -1;
     double alphaEnd = 1;
-//    double deltaAlpha = 1;
     uint alphaLength = 3;
+
     // always set h to be smaller than discretisation of the state space and time
-    double h = pow(10.0, -5);
+    double h = pow(10.0, -4);
+
     MarkovChainParameters mcp(leftBound, rightBound, gridLength, alphaStart, alphaEnd, alphaLength, h, 3);
     mcp.setMaxIterations(iterations);
-    mcp.setMinError(pow(10.0, -3.0));
+    mcp.setMinError(pow(10.0, -6.0));
 
     // Set the initial guess
-    double markovInitGuess = 0.5;
+    double markovInitGuess = 5.0;
     MarkovChainApproximation markovCA(mcp, markovInitGuess, 4, true);
-    markovCA.computeMarkovApproximation(costFunction, driftFunction, diffFunction);
+    markovCA.computeMarkovApproximation(costFunction, driftFunction, diffFunction, diffusionMatrix);
 
     // We use the EulersMethod class again
-    EulersMethod euler(0.0, 1.0, (uint)(200), (uint)(3));
+    EulersMethod euler(0.0, 10.0, (uint)(200), (uint)(3));
 
     // The EulersMethod1D function has a solve that allows you to pass it the MCA object, and thus it utilises the MCA
     // ODE state space results and optimal control results.
@@ -112,7 +120,8 @@ void ExecuteDubinsCar(unsigned int iterations)
         euler.saveSolution(markovEulerFile);
     }
     markovEulerFile.close();
-/*
+
+    /*
     // Also create file with MCA optimal control data
     ofstream markovControlFileStream;
     markovControlFileStream.open("ControlResult.dat", std::ofstream::out);
@@ -155,7 +164,8 @@ void ExecuteDubinsCar(unsigned int iterations)
 
     }
     markovControlFileStream.close();
-*/
+    */
+
     // Plot the data using gnuplot ------------------------------------------------------ //
     // TODO: Put in plotting commands
 }

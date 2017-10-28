@@ -35,7 +35,8 @@ public:
     /// array representing the diffusion applied to each subsystem
     void computeMarkovApproximation(d_fcn2dep& costFunction,
                                     v_fcn2dep& driftFunction,
-                                    v_fcn1dep& diffFunction);
+                                    v_fcn1dep& diffFunction,
+                                    v_fcn1dep& diffMatrix);
 
     /// \brief Finds the most optimal control value at a specific location along arbitrary one-dimensional grid.
     ///

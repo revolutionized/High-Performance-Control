@@ -114,7 +114,7 @@ void ExecuteOneDimension(unsigned int iterations)
     double markovInitGuess = 2.0;
     // Markov Chain Approximation (MCA) will solve the optimal cost values and ODE values at each point
     MarkovChainApproximation markovCA(mcp, markovInitGuess, 4, true);
-    markovCA.computeMarkovApproximation(costFunction2, driftFunction2, diffFunction2);
+    markovCA.computeMarkovApproximation(costFunction2, driftFunction2, diffFunction2, diffusionMatrix2);
 
     // We use the EulersMethod class again
     euler = new EulersMethod(epm);

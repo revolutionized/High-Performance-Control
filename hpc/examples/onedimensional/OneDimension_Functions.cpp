@@ -43,3 +43,8 @@ void sigmaFunction2(const double* x, double* out)
 {
     out[0] = 0.0;
 }
+
+void diffusionMatrix2(double* x, double* out)
+{
+    out[0] = 0.0;
+}
