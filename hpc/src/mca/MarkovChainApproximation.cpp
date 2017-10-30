@@ -37,9 +37,6 @@ using std::map;
 #define MAXFLOAT 1.79769e+308
 #endif
 
-#define PHAT_TEST(phat) { if ((phat) > 1.0 || (phat) < 0.0) cout << "ERROR Phat > 1.0 or < 0.0 " << NEWL; }
-
-
 MarkovChainApproximation::MarkovChainApproximation(MarkovChainParameters& mcp,
                                                    double initStateGuess,
                                                    unsigned int precision,
@@ -58,34 +55,29 @@ MarkovChainApproximation::MarkovChainApproximation(MarkovChainParameters& mcp,
         // since there may not be enough space on the memory
         for (uint ii = 0; ii < mcp.getNumOfGrids(); ++ii)
         {
-            file aNewFile;
-            aNewFile.stream = new std::fstream;
+			oldVFile_.stream = new std::fstream;
             // Set precision
-            aNewFile.stream->precision(precision);
+			oldVFile_.stream->precision(precision);
             // Set filename
-            aNewFile.filename = ".tmpMCA_Old~" + std::to_string(ii);
-            aNewFile.stream->open(aNewFile.filename);
+			oldVFile_.filename = ".tmpMCA_Old~" + std::to_string(ii);
+			oldVFile_.stream->open(oldVFile_.filename);
             // Apply initial guess
             for (uint jj = 0; jj < mcp.getGridLength(ii); ++jj)
             {
-                (*aNewFile.stream) << std::to_string(initStateGuess) << NEWL;
+                (*oldVFile_.stream) << std::to_string(initStateGuess) << NEWL;
             }
-            oldVFile_->push_back(aNewFile);
 
-
-            file anotherNewFile;
-            anotherNewFile.stream = new std::fstream;
+			newVFile_.stream = new std::fstream;
             // Set precision
-            anotherNewFile.stream->precision(precision);
+			newVFile_.stream->precision(precision);
             // Set filename
-            anotherNewFile.filename = ".tmpMCA_New~" + std::to_string(ii);
-            anotherNewFile.stream->open(anotherNewFile.filename);
+			newVFile_.filename = ".tmpMCA_New~" + std::to_string(ii);
+			newVFile_.stream->open(newVFile_.filename);
             // Apply initial guess
             for (uint jj = 0; jj < mcp.getGridLength(ii); ++jj)
             {
-                (*anotherNewFile.stream) << std::to_string(initStateGuess) << NEWL;
+                (*newVFile_.stream) << std::to_string(initStateGuess) << NEWL;
             }
-            newVFile_->push_back(anotherNewFile);
         }
         minAlphaFile_.stream = new std::fstream;
         // Set precision
@@ -160,30 +152,25 @@ MarkovChainApproximation::~MarkovChainApproximation()
     else
     {
         // Close and remove files used for dynamic programming equations
-        for (auto& it : *oldVFile_)
-        {
-            it.deallocate();
-        }
-        oldVFile_->clear();
-        for (auto& it : *newVFile_)
-        {
-            it.deallocate();
-        }
-        newVFile_->clear();
-
+		oldVFile_.deallocate();
+		newVFile_.deallocate();
         minAlphaFile_.deallocate();
     }
 
-    // All modes utilise these vectors during computation
+	// region Old Code
+	/*
     delete pHat_;
     delete vProbs_;
+    */
+	// endregion
+
+    // All modes utilise these vectors during computation
     delete vSummed_;
 }
 
-void MarkovChainApproximation::computeMarkovApproximation(d_fcn2dep& costFunction,
-                                                          v_fcn2dep& driftFunction,
-                                                          v_fcn1dep& diffFunction,
-                                                          v_fcn1dep& diffMatrix)
+void MarkovChainApproximation::computeMarkovApproximation(d_fcn_pdd& costFunction,
+                                                          v_fcn_pddpd& driftFunction,
+														  v_fcn_pdppd& diffMatrix)
 {
     // Current index of grid (e.g. for a 3x3 system we are at (0,1,3) or something
     GridIndex gridIndex(mcp_.getNumOfGrids());
@@ -198,10 +185,14 @@ void MarkovChainApproximation::computeMarkovApproximation(d_fcn2dep& costFunctio
     float totalCountToComplete = mcp_.getGridLengthAccumulation() + 1;
 
     uint dimensions = mcp_.getNumOfGrids();
-    // Define transition probabilities
-//    vector<double> phat;
-//    phat.reserve(static_cast<unsigned long>(int(pow(3.0, dimensions))));
-//    auto test = phat.size();
+	// Allocate memory for covariance and sigma matrices here, since it's costly allocating memory in for loops
+	auto covariance = new double*[dimensions];
+	auto sigmaMatrix = new double*[dimensions];
+	for (int ii = 0; ii < dimensions; ++ii)
+	{
+		covariance[ii] = new double[dimensions];
+		sigmaMatrix[ii] = new double[dimensions];
+	}
 
     if (memoryModeRAM_)
     {
@@ -217,76 +208,62 @@ void MarkovChainApproximation::computeMarkovApproximation(d_fcn2dep& costFunctio
             uint progressCount = 0;
             int percentage_complete = 0;
 
-            bool weakDiagonals = false;
+			// region Old Code
+			/* OLD METHOD - Mainly used for 1-dimensional purposes
+			 *
+			 * do
+             * {
+             *      // Solve all summations for different alpha values
+             *   	solveTransitionSummations(gridIndex, costFunction, driftFunction, diffFunction);
+             *
+             *   	// Find the minimum alpha term for the DPE
+             *   	determineMinimumAlpha(gridIndex);
+             *
+             *
+			 *		// If progress has jumped up more than 1% then redraw the progress bar
+			 *		// To reduce multiple prints of same percentage, just skip until a different percentage is reached
+			 *		auto prog = int(static_cast<float>(++progressCount*100.0/totalCountToComplete));
+			 *		if (prog != percentage_complete)
+			 *		{
+			 *			percentage_complete = prog;
+			 *			// We say its the total number of grid elements + 1 since the 1% remaining is for vectors below
+			 *			utils::printProgress(percentage_complete);
+			 *		}
+             * } while (gridIndex.nextGridElement(mcp_, 1));
+             *
+             */
+			// endregion
 
+			// Check for weak diagonals of the diffusion matrix (which will result in poor accuracy)
+			bool weakDiagonals;
+
+			// region Loop for each grid index
             do
             {
-                // Get covariance matrix
+
+         		// Get covariance matrix
                 double location[dimensions];
                 mcp_.getGridAtIndices(gridIndex, location);
-                double sigmaMatrix[dimensions*dimensions];
                 diffMatrix(location, sigmaMatrix);
-                double covariance[dimensions][dimensions];
+				weakDiagonals = getCovariance(sigmaMatrix, covariance);
 
-                // Perform covariance * covariance' <- where ' signifies transpose
-                for (int ii = 0; ii < dimensions; ++ii)
-                {
-                    for (int jj = 0; jj < dimensions; ++jj)
-                    {
-                        covariance[ii][jj] = 0.0;
-
-                        for (int kk = 0; kk < dimensions; ++kk)
-                        {
-                            covariance[ii][jj] += sigmaMatrix[dimensions*kk + ii] * sigmaMatrix[dimensions*jj + kk];
-                            auto test = covariance[ii][jj];
-                            auto stop = false;
-                        }
-                    }
-                }
-
-                // Test for weak diagonals of covariance matrix
-                for (int ii = 0; ii < dimensions; ++ii)
-                {
-                    double diag = covariance[ii][ii];
-                    for (int jj = 0; jj < dimensions; ++jj)
-                    {
-                        if (jj == ii)
-                        {
-                            continue;
-                        }
-                        diag -= covariance[ii][jj];
-                    }
-                    if (diag < 0)
-                    {
-                        weakDiagonals = true;
-                    }
-                }
-
-
-                auto test = mcp_.getAlphaLength();
                 // Loops through each alpha value
                 for (int ai = 0; ai < mcp_.getAlphaLength(); ++ai)
                 {
                     double alpha = mcp_.getAlphaAtIndex(static_cast<uint>(ai));
 
-
-                    double k = costFunction(location, alpha);
-
+                    double k = costFunction(location, alpha); // cost
                     double deltaT[dimensions]; // interpolation interval
 
                     double b[dimensions]; // drift
                     driftFunction(location, alpha, b);
 
                     double Qhat[dimensions]; // normalising coefficient
-                    double diagSum = 0.0;
-                    for (int ii = 0; ii < dimensions; ++ii)
-                    {
-                        diagSum += covariance[ii][ii];
-                    }
+                    double trace = getTrace(covariance, dimensions);
 
                     for (int ii = 0; ii < dimensions; ++ii)
                     {
-                        Qhat[ii] = diagSum + mcp_.getH()*fabs(b[ii]);
+                        Qhat[ii] = trace + mcp_.getH()*fabs(b[ii]);
                         // Get off-diagonal components
                         for (int jj = 0; jj < dimensions && jj != ii; ++jj)
                         {
@@ -297,114 +274,11 @@ void MarkovChainApproximation::computeMarkovApproximation(d_fcn2dep& costFunctio
                     }
 
                     // Transition probabilities
-                    for (int ii = 0; ii < dimensions; ++ii)
-                    {
-                        double phat[2];
-
-                        // Probability of transitioning either side of current dimension
-//                        int thisDimensionPos = ii*int(pow(3.0, dimensions - 1));
-                        int thisDimensionPos = 0;
-//                        int thisDimensionNeg = thisDimensionPos + 1;
-                        int thisDimensionNeg = 1;
-
-                        double numPos = covariance[ii][ii]/2.0;
-                        double numNeg = numPos;
-                        for (int kk = 0; kk < dimensions && kk != ii; ++kk)
-                        {
-                            numPos -= fabs(covariance[ii][kk])/2.0;
-                            numNeg -= fabs(covariance[ii][kk])/2.0;
-                        }
-                        double bPos = b[ii] > 0 ? b[ii] : 0;
-                        double bNeg = -b[ii] > 0 ? -b[ii] : 0;
-                        numPos += mcp_.getH()*bPos;
-                        numNeg += mcp_.getH()*bNeg;
-
-
-                        phat[thisDimensionPos] = numPos/Qhat[ii]; PHAT_TEST(phat[thisDimensionPos]);
-                        phat[thisDimensionNeg] = numNeg/Qhat[ii]; PHAT_TEST(phat[thisDimensionNeg]);
-
-                        // Need to consider indices related to the current transition
-                        GridIndex posGridIndex(gridIndex);
-                        posGridIndex.setGridIndexOfDim(static_cast<uint>(ii),
-                                                       posGridIndex.getIndexOfDim(static_cast<uint>(ii)) + 1);
-                        GridIndex negGridIndex(gridIndex);
-                        negGridIndex.setGridIndexOfDim(static_cast<uint>(ii),
-                                                       negGridIndex.getIndexOfDim(static_cast<uint>(ii)) - 1);
-
-                        // Need to find the related gridIndex of moving up or down
-                        (*vSummed_)[ai][ii] = k*deltaT[ii];
-                        (*vSummed_)[ai][ii] += phat[thisDimensionPos]*(*oldV_)[posGridIndex];
-                        (*vSummed_)[ai][ii] += phat[thisDimensionNeg]*(*oldV_)[negGridIndex];
-
-                        // Now the remaining probability is that it stays
-                        double phat_stay = 1.0 - phat[thisDimensionNeg] - phat[thisDimensionNeg];
-
-                        // Probability of transitioning either both +ve or both -ve along two axes
-                        for (int jj = 0; jj < dimensions; ++jj)
-                        {
-                            if (jj == ii)
-                            {
-                                continue;
-                            }
-                            // Positive along both grid axes
-                            double num = covariance[ii][jj] > 0.0 ? covariance[ii][jj] : 0.0;
-                            double den = 2*Qhat[ii];
-                            double posposPhat = num/den; PHAT_TEST(posposPhat);
-                            GridIndex posposIndex(gridIndex);
-                            posposIndex.setGridIndexOfDim(static_cast<uint>(ii),
-                                                               posposIndex.getIndexOfDim(static_cast<uint>(ii)) + 1);
-                            posposIndex.setGridIndexOfDim(static_cast<uint>(jj),
-                                                          posposIndex.getIndexOfDim(static_cast<uint>(jj)) + 1);
-                            (*vSummed_)[ai][ii] += posposPhat*(*oldV_)[posposIndex];
-
-                            // Negative along both grid axes
-                            double negnegPhat = num/den; PHAT_TEST(negnegPhat);
-                            GridIndex negnegIndex(gridIndex);
-                            negnegIndex.setGridIndexOfDim(static_cast<uint>(ii),
-                                                          negnegIndex.getIndexOfDim(static_cast<uint>(ii)) - 1);
-                            negnegIndex.setGridIndexOfDim(static_cast<uint>(jj),
-                                                          negnegIndex.getIndexOfDim(static_cast<uint>(jj)) - 1);
-                            (*vSummed_)[ai][ii] += negnegPhat*(*oldV_)[negnegIndex];
-
-                            // Positive along one axis and negative along the other (first way)
-                            num = -covariance[ii][jj] > 0.0 ? -covariance[ii][jj] : 0.0;
-                            double posnegPhat = num/den; PHAT_TEST(posnegPhat);
-                            GridIndex posnegIndex(gridIndex);
-                            posnegIndex.setGridIndexOfDim(static_cast<uint>(ii),
-                                                          posnegIndex.getIndexOfDim(static_cast<uint>(ii)) + 1);
-                            posnegIndex.setGridIndexOfDim(static_cast<uint>(jj),
-                                                          posnegIndex.getIndexOfDim(static_cast<uint>(jj)) - 1);
-                            (*vSummed_)[ai][ii] += posnegPhat*(*oldV_)[posnegIndex];
-
-                            // Positive along one axis and negative along the other (second way)
-                            double negposPhat = num/den; PHAT_TEST(negposPhat);
-                            GridIndex negposIndex(gridIndex);
-                            negposIndex.setGridIndexOfDim(static_cast<uint>(ii),
-                                                          negposIndex.getIndexOfDim(static_cast<uint>(ii)) - 1);
-                            negposIndex.setGridIndexOfDim(static_cast<uint>(jj),
-                                                          negposIndex.getIndexOfDim(static_cast<uint>(jj)) + 1);
-                            (*vSummed_)[ai][ii] += negposPhat*(*oldV_)[negposIndex];
-
-                            // Calculate remainder
-                            phat_stay -= posposPhat;
-                            phat_stay -= negnegPhat;
-                            phat_stay -= posnegPhat;
-                            phat_stay -= negposPhat;
-                        }
-
-                        (*vSummed_)[ai][ii] += phat_stay*(*oldV_)[gridIndex];
-                    }
+					solveTransitionSummations(covariance, k, b, deltaT, Qhat, gridIndex, ai);
                 }
-
-
-
-
-                // Solve all summations for different alpha values
-//                solveTransitionSummations(gridIndex, costFunction, driftFunction, diffFunction);
 
                 // Find the minimum alpha term for the DPE
                 determineMinimumAlpha(gridIndex);
-
 
                 // If progress has jumped up more than 1% then redraw the progress bar
                 // To reduce multiple prints of same percentage, just skip until a different percentage is reached
@@ -431,23 +305,38 @@ void MarkovChainApproximation::computeMarkovApproximation(d_fcn2dep& costFunctio
                 cout << "  warning: Weak covariance diagonals were found in last iteration. "
                         "Approximation may be be poor." << NEWL;
             }
+			// endregion
 
         } while (relErr > mcp_.getRelativeError() && iterations < mcp_.getMaxIterations());
+
+
     }
     else
     {
         // TODO: File writing mode
     }
 
+	// Clear memory for covariance matrix and sigma matrix
+	for (int ii = 0; ii < dimensions; ++ii)
+	{
+		delete[] covariance[ii];
+		delete[] sigmaMatrix[ii];
+	}
+	delete[] covariance;
+	delete[] sigmaMatrix;
+
     // Print one new line since our iterations use "\r" which returns to the beginning, and then
     // two new lines at the end to have a gap after MCA conclusion
     cout << NEWL << "==== Finished Markov Chain Approximation ====" << NEWL << NEWL;
 }
 
+// region Old Code
+
+/*
 void MarkovChainApproximation::solveTransitionSummations(const GridIndex& gridIndices,
-                                                         d_fcn2dep& costFunctionK,
-                                                         v_fcn2dep& driftFunction,
-                                                         v_fcn1dep& diffFunction)
+                                                         d_fcn_pdd& costFunctionK,
+                                                         v_fcn_pddpd& driftFunction,
+                                                         v_fcn_pdpd& diffFunction)
 {
     // gridLocation basically represents the actual x, y, z (etc.) value that we are at
     double gridLocation[mcp_.getNumOfGrids()];
@@ -510,7 +399,7 @@ void MarkovChainApproximation::solveTransitionSummations(const GridIndex& gridIn
     }
 }
 
-void MarkovChainApproximation::B_func(v_fcn2dep& driftFunction,
+void MarkovChainApproximation::B_func(v_fcn_pddpd& driftFunction,
                                       double* gridLocation,
                                       double alpha,
                                       double* out)
@@ -527,8 +416,8 @@ MarkovChainApproximation::solveTransitionProbabilities(const GridIndex& currentI
                                                        uint currentDimension,
                                                        double alpha,
                                                        double den,
-                                                       v_fcn2dep& driftFunction,
-                                                       v_fcn1dep& diffFunction,
+                                                       v_fcn_pddpd& driftFunction,
+                                                       v_fcn_pdpd& diffFunction,
                                                        double currentNumerator,
                                                        double currentBpart)
 {
@@ -613,6 +502,9 @@ double MarkovChainApproximation::kahanSum(const vector<double>* array)
 
     return sum;
 }
+*/
+
+// endregion
 
 void MarkovChainApproximation::determineMinimumAlpha(const GridIndex& gridIndices)
 {
@@ -722,6 +614,152 @@ void MarkovChainApproximation::printAlpha(std::ofstream& stream)
     {
         stream << (*minAlpha_)[newGrid] << NEWL;
     } while (newGrid.nextGridElement(mcp_));
+}
+
+bool MarkovChainApproximation::getCovariance(double** sigmaMatrix, double** out)
+{
+	bool weakDiagonals = false;
+	int dimensions = static_cast<int>(mcp_.getNumOfGrids());
+
+	// Perform covariance * covariance' <- where ' signifies transpose
+	for (int ii = 0; ii < dimensions; ++ii)
+	{
+		for (int jj = 0; jj < dimensions; ++jj)
+		{
+			out[ii][jj] = 0.0;
+			for (int kk = 0; kk < dimensions; ++kk)
+			{
+				// This is not matrix multiplication, it is matrix multiplied by its transpose
+				out[ii][jj] += sigmaMatrix[ii][kk]*sigmaMatrix[jj][kk];
+			}
+
+			if (ii == jj)
+			{
+			    if (out[ii][jj] < 0)
+			    {
+			        weakDiagonals = true;
+			    }
+			}
+		}
+	}
+
+	return weakDiagonals;
+}
+
+double MarkovChainApproximation::getTrace(double** covariance, int dimensions)
+{
+	double diagSum = 0.0;
+	for (int ii = 0; ii < dimensions; ++ii)
+	{
+		diagSum += covariance[ii][ii];
+	}
+	return diagSum;
+}
+
+void MarkovChainApproximation::solveTransitionSummations(double** covariance,
+														 double k,
+														 const double* b,
+														 const double* deltaT,
+														 const double* Qhat,
+														 const GridIndex& gridIndex,
+														 int ai)
+{
+	auto dimensions = static_cast<int>(mcp_.getNumOfGrids());
+
+	for (int ii = 0; ii < dimensions; ++ii)
+	{
+		double phat[2];
+
+		// Probability of transitioning either side of current dimension
+		int thisDimensionPos = 0;
+		int thisDimensionNeg = 1;
+
+		double numPos = covariance[ii][ii]/2.0;
+		double numNeg = numPos;
+		for (int kk = 0; kk < dimensions && kk != ii; ++kk)
+		{
+			numPos -= fabs(covariance[ii][kk])/2.0;
+			numNeg -= fabs(covariance[ii][kk])/2.0;
+		}
+		double bPos = b[ii] > 0 ? b[ii] : 0;
+		double bNeg = -b[ii] > 0 ? -b[ii] : 0;
+		numPos += mcp_.getH()*bPos;
+		numNeg += mcp_.getH()*bNeg;
+
+		phat[thisDimensionPos] = numPos/Qhat[ii];
+		phat[thisDimensionNeg] = numNeg/Qhat[ii];
+
+		// Need to consider indices related to the current transition
+		GridIndex posGridIndex(gridIndex);
+		posGridIndex.setGridIndexOfDim(static_cast<uint>(ii),
+									   posGridIndex.getIndexOfDim(static_cast<uint>(ii)) + 1);
+		GridIndex negGridIndex(gridIndex);
+		negGridIndex.setGridIndexOfDim(static_cast<uint>(ii),
+									   negGridIndex.getIndexOfDim(static_cast<uint>(ii)) - 1);
+
+		// Need to find the related gridIndex of moving up or down
+		(*vSummed_)[ai][ii] = k*deltaT[ii];
+		(*vSummed_)[ai][ii] += phat[thisDimensionPos]*(*oldV_)[posGridIndex];
+		(*vSummed_)[ai][ii] += phat[thisDimensionNeg]*(*oldV_)[negGridIndex];
+
+		// Now the remaining probability is that it stays
+		double phat_stay = 1.0 - phat[thisDimensionNeg] - phat[thisDimensionNeg];
+
+		// Probability of transitioning either both +ve or both -ve along two axes
+		for (int jj = 0; jj < dimensions; ++jj)
+		{
+			if (jj == ii)
+			{
+				continue;
+			}
+			// Positive along both grid axes
+			double num = covariance[ii][jj] > 0.0 ? covariance[ii][jj] : 0.0;
+			double den = 2*Qhat[ii];
+			double posposPhat = num/den;
+			GridIndex posposIndex(gridIndex);
+			posposIndex.setGridIndexOfDim(static_cast<uint>(ii),
+										  posposIndex.getIndexOfDim(static_cast<uint>(ii)) + 1);
+			posposIndex.setGridIndexOfDim(static_cast<uint>(jj),
+										  posposIndex.getIndexOfDim(static_cast<uint>(jj)) + 1);
+			(*vSummed_)[ai][ii] += posposPhat*(*oldV_)[posposIndex];
+
+			// Negative along both grid axes
+			double negnegPhat = num/den;
+			GridIndex negnegIndex(gridIndex);
+			negnegIndex.setGridIndexOfDim(static_cast<uint>(ii),
+										  negnegIndex.getIndexOfDim(static_cast<uint>(ii)) - 1);
+			negnegIndex.setGridIndexOfDim(static_cast<uint>(jj),
+										  negnegIndex.getIndexOfDim(static_cast<uint>(jj)) - 1);
+			(*vSummed_)[ai][ii] += negnegPhat*(*oldV_)[negnegIndex];
+
+			// Positive along one axis and negative along the other (first way)
+			num = -covariance[ii][jj] > 0.0 ? -covariance[ii][jj] : 0.0;
+			double posnegPhat = num/den;
+			GridIndex posnegIndex(gridIndex);
+			posnegIndex.setGridIndexOfDim(static_cast<uint>(ii),
+										  posnegIndex.getIndexOfDim(static_cast<uint>(ii)) + 1);
+			posnegIndex.setGridIndexOfDim(static_cast<uint>(jj),
+										  posnegIndex.getIndexOfDim(static_cast<uint>(jj)) - 1);
+			(*vSummed_)[ai][ii] += posnegPhat*(*oldV_)[posnegIndex];
+
+			// Positive along one axis and negative along the other (second way)
+			double negposPhat = num/den;
+			GridIndex negposIndex(gridIndex);
+			negposIndex.setGridIndexOfDim(static_cast<uint>(ii),
+										  negposIndex.getIndexOfDim(static_cast<uint>(ii)) - 1);
+			negposIndex.setGridIndexOfDim(static_cast<uint>(jj),
+										  negposIndex.getIndexOfDim(static_cast<uint>(jj)) + 1);
+			(*vSummed_)[ai][ii] += negposPhat*(*oldV_)[negposIndex];
+
+			// Calculate remainder
+			phat_stay -= posposPhat;
+			phat_stay -= negnegPhat;
+			phat_stay -= posnegPhat;
+			phat_stay -= negposPhat;
+		}
+
+		(*vSummed_)[ai][ii] += phat_stay*(*oldV_)[gridIndex];
+	}
 }
 
 

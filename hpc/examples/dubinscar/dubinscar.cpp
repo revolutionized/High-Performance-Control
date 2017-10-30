@@ -18,28 +18,33 @@
 using std::cout;
 using std::ofstream;
 
-void driftFunction(double* x, double alpha, double* out)
-{
-    out[0] = cos(x[2]);
-    out[1] = sin(x[2]);
-    out[2] = alpha;
-}
-
-void diffusionMatrix(double* x, double* out)
-{
-    out[0] = W_1;   out[3] = 0.0;   out[6] = 0.0;
-    out[1] = 0.0;   out[4] = W_2;   out[7] = 0.0;
-    out[2] = 0.0;   out[5] = 0.0;   out[8] = W_3;
-}
-
+// region Old Code
+/*
 void diffFunction(double* x, double* out)
 {
-    // Remove warning of unused x by casting it to void
-    (void*)(x);
+    // Can remove warning of unused x by casting it to void like so
+	// (void*)(x);
 
     out[0] = W_1;
     out[1] = W_2;
     out[2] = W_3;
+}
+*/
+// endregion
+
+void driftFunction(double* x, double alpha, double* out)
+{
+	out[0] = cos(x[2]);
+	out[1] = sin(x[2]);
+	out[2] = alpha;
+}
+
+void diffusionMatrix(double* x, double** out)
+{
+	// Each row is the effect a particular dimension has on the diffusion
+    out[0][0] = W_1;   out[0][1] = 0.0;   out[0][2] = 0.0;
+    out[1][0] = 0.0;   out[1][1] = W_2;   out[1][2] = 0.0;
+    out[2][0] = 0.0;   out[2][1] = 0.0;   out[2][2] = W_3;
 }
 
 double costFunction(double* x, double alpha)
@@ -58,14 +63,29 @@ double costFunction(double* x, double alpha)
 
 void odeFunction(double* x, double alpha, double* out)
 {
+	// calculate drift
     double drift[3];
     driftFunction(x, alpha, drift);
-    double diff[3];
-    diffFunction(x, diff);
 
-    out[0] = drift[0] + diff[0]; // dx = cos(theta) + dw_x
-    out[1] = drift[1] + diff[1]; // dy = sin(theta) + dw_y
-    out[2] = drift[2] + diff[2]; // dtheta = alpha + dw_theta*10^-2
+	// calculate diffusion
+    auto diff = new double*[3];
+	for (int ii = 0; ii < 3; ++ii)
+	{
+		diff[ii] = new double[3];
+	}
+	diffusionMatrix(x, diff);
+
+    out[0] = drift[0] + diff[0][0] + diff[0][1] + diff[0][2]; // dx = cos(theta) + dw_x
+    out[1] = drift[1] + diff[1][0] + diff[1][1] + diff[1][2]; // dy = sin(theta) + dw_y
+    out[2] = drift[2] + diff[2][0] + diff[2][1] + diff[2][1]; // dtheta = alpha + dw_theta*10^-2
+
+
+	// de-allocate diffusion values
+	for (int ii = 0; ii < 3; ++ii)
+	{
+		delete[] diff[ii];
+	}
+	delete[] diff;
 }
 
 void ExecuteDubinsCar(unsigned int iterations)
@@ -98,14 +118,14 @@ void ExecuteDubinsCar(unsigned int iterations)
     // Set the initial guess
     double markovInitGuess = 5.0;
     MarkovChainApproximation markovCA(mcp, markovInitGuess, 4, true);
-    markovCA.computeMarkovApproximation(costFunction, driftFunction, diffFunction, diffusionMatrix);
+    markovCA.computeMarkovApproximation(costFunction, driftFunction, diffusionMatrix);
 
     // We use the EulersMethod class again
     EulersMethod euler(0.0, 10.0, (uint)(200), (uint)(3));
 
     // The EulersMethod1D function has a solve that allows you to pass it the MCA object, and thus it utilises the MCA
     // ODE state space results and optimal control results.
-    double initGuessPtr[dim] = {3.0, 2.5, -M_PI/2.0};
+    double initGuessPtr[dim] = {3.0, 2.5, M_PI/2.0};
     euler.solve(odeFunction, initGuessPtr, &markovCA);
 
     cout << "=== Writing results to file ===" << std::endl;

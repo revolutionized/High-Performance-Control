@@ -47,7 +47,7 @@ EulersMethod::~EulersMethod()
     delete solution_;
 }
 
-void EulersMethod::solve(v_fcn2dep& fcnDerivative,
+void EulersMethod::solve(v_fcn_pddpd& fcnDerivative,
                          const double* initGuess,
                          MarkovChainApproximation* mca)
 {
