@@ -6,6 +6,7 @@
 \usepackage[a4paper, margin=1in]{geometry}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{bm}
 \usepackage{txfonts}
 \usepackage{algorithm}
 \usepackage{algorithmicx}
@@ -14,9 +15,12 @@
 \usepackage{relsize}
 \usepackage[titletoc,title]{appendix}
 \usepackage[final]{pdfpages}
+\usepackage{todonotes}
 \usepackage{graphicx}
 \graphicspath{ {images/} }
 %END_FOLD
+\setlength{\parindent}{0pt} % Remove indents
+
 %BEGIN_FOLD % New definitions / commands
 
 \makeatletter
@@ -171,23 +175,24 @@ To approach the comparison study, there needed to be a library for accessing and
 \newpage
 \section{Literature Review} 
 \subsection{Background to Optimal Control}
-\textcolor{red}{Weak description of dynamic programming}
-A control system consists of subsystems and processes assembled for the purpose of obtaining a desired output with desired performance, given a specified input \cite{nise}. Our interest lies in the topic of optimisation, known as the field of optimal control: to find the mathematical optimisation for control problems \cite{ieeeControl}. An optimal control is usually represented in a set of differential equations describing the paths of the control variables that minimise the cost function – a mathematical formula used to graph the cost of an application or process given certain inputs \cite{costfunction}. \\
+\todo{Weak description of dynamic programming}
+A control system consists of subsystems and processes assembled for the purpose of obtaining a desired output with desired performance, given a specified input \cite{nise}. Our interest lies in the topic of optimisation, known as the field of optimal control: to find the mathematical optimisation for control problems \cite{ieeeControl}. An optimal control is usually represented in a set of differential equations describing the paths of the control variables that minimise the cost function -- a mathematical formula used to graph the cost of an application or process given certain inputs \cite{costfunction}. \\
 
 \noindent The optimization of control problems arises in many settings, ranging from efficiently managing heating systems to improving entire economies \cite{powell}. Other examples include: effective aircraft landing, managing large stock of blood inventories, scheduling numerous fleets of vehicles, selling assets, planning and integrating large electrical grids, and even playing a game of tic-tac-toe or backgammon. Each of these problems involve making decisions, then observing results, followed by more decision making and so on. Although such problems can sometimes be straightforward to formulate, they are not always as simple to solve. \\
 
-\noindent Dynamic programming is a method for solving complex problems: by breaking it down into a collection of simpler sub problems – solving each of those sub problems just once, and storing their solutions \cite{wikiDyn}. Ideally, this method is best built using a memory-based data structure – then on the next occurrence of the same sub problem, the computed solution already exists and is not required to be recalculated. This tactic can save computation time at the expense of storage space. \\
+\noindent Dynamic programming is a method for solving complex optimisation problems: by breaking it down into a collection of simpler sub problems - solving each of those sub problems just once, and storing their solutions \cite{wikiDyn}. Ideally, this method is best built using a memory-based data structure - then on the next occurrence of the same sub problem, the computed solution already exists and is not required to be recalculated. This tactic can save computation time at the expense of storage space. In the dynamic programming approach, we seek an optimal value function that is equal to the optimal cost function. In continuous-time and space, the optimal value function is the solution to the Bellman equation. \todo{reference}\\
 
 \subsection{Contribution to Modern Control Systems}
 \noindent Dynamic programming is the approach we have decided to use in solving complex problems. Unfortunately, it comes with something called the curse of dimensionality, and if we can improve upon this barrier then the future of engineering within optimal control can be greatly benefited. \\
 
-\noindent This curse of dimensionality basically means that the computational complexity for solving dynamic programming problems grows exponentially with the number of dimensions considered. So, for complex problems such as motion planning for a UAV through a tight gap, the time taken to numerically solve it is far too long and the memory storage needed to store the solution is far too high. Rather than attempting to overload our available computational power, we are to look at evolving the current methods being utilised. \\
+\noindent This curse of dimensionality basically means that the computational complexity (and hence, the run-time) for solving dynamic programming problems grows exponentially with the number of dimensions considered in the state space. So, for complex problems such as motion planning for a UAV through a tight gap, the time taken to numerically solve it is far too long and the memory storage needed to store the solution is far too high. Rather than attempting to overload our available computational power, we are to look at evolving the current methods being utilised. \\
 
 \noindent A well-known numerical method for solving optimal control problems is the Markov Chain Approximation (MCA) \cite{kushner}. The basic formula of the MCA is to approximate the original controlled process by a chosen controlled Markov process within a finite state-space (effectively it is a “discretisation” of the original state space of the problem). \\
-\newpage
 
-\subsection{Novel Tensor Approach}
-A novel approach has been presented which utilises a tensor decomposition to improve the compression of the optimal solution as well as to reduce the computational complexity. This approach carries on from the research conducted of the ‘Function-Train’ \cite{ft-alex}, which is a representation of functions of many variables in a compressed form, as opposed to the common ‘discretisation’ technique which most numerical methods use. Some of the advantages to this approach are:
+\subsection{Novel Tensor Decomposition Approach}
+A novel approach has been presented which utilises a tensor decomposition technique to improve the compression of the optimal solution as well as to reduce the computational complexity. This approach is termed as \textit{compressed continuous computations} (C3) and extends from the \textit{continuous computation} framework, which roughly refers to computations with functions instead of discrete arrays, and was employed in the popular Matlab software package Chebfun. In the Chebfun software package, the user performs computations using uni-, bi-, or tri-variate functions which are represented in Chebyshev polynomial bases \cite{chebfun}. The tensor decomposition carries on from the research conducted of the ‘Function-Train’ \cite{ft-alex}.
+
+Some of the advantages to this approach are:
 \begin{itemize}
 	\item Continuous input space of a high-dimensional function, rather than a discretised set of inputs (far less storage space required)
 	\item Fast adaption to local features of a function, rather than iterative grid refinement methods
@@ -195,45 +200,46 @@ A novel approach has been presented which utilises a tensor decomposition to imp
 \end{itemize}
 \noindent By utilising this new approach, the time taken, and storage needed, to numerically solve a non-linear stochastic control problem (such as that of the UAV manoeuvring through tight gaps) can hopefully be reduced significantly. This is also hoped to be accomplished without losing needed accuracy.\\
 
-\subsection{Continuous Linear Algebra}
-The fundamental backbone of the tensor decomposition algorithm lies in interpreting continuous objects on a computer not as being discretised but rather parameterized. Usually discretization implies that the computer can only “see” a function on a computer through its evaluation at a set of points. Parameterization implies that the computer can “see” a function on a computer through a finite set of parameters and a set of routines that map those parameters to outputs of interest \cite{thesis}. In discrete linear algebra, the primary elements of dynamic programming equations are vectors and matrices. But in this continuous linear approach the primary elements are scalar-, vector-, and matrix-valued functions. The following figure shows how this difference affects (and how it would be applied in) the C-programming language.
+\subsubsection{Continuous Linear Algebra}
+As noted, the fundamental backbone of the tensor decomposition algorithm lies in interpreting continuous objects on a computer not as being discretised but rather parametrised. Usually discretisation implies that the computer can only “see” a function on a computer through its evaluation at a set of points. Parametrisation implies that the computer can “see” a function on a computer through a finite set of parameters and a set of routines that map those parameters to outputs of interest \cite{thesis}. In discrete linear algebra, the primary elements of dynamic programming equations are vectors and matrices. But in this continuous linear approach the primary elements are scalar-, vector-, and matrix-valued functions. The following figure shows how this difference was applied in the C-programming language.
 
 \begin{figure}[h!]
 	\centering
 	\includegraphics[scale = 0.4]{ContinuousLinearAlgebraDifference1}
-	\caption{Parameterization affect and application in C-programming language}
+	\caption{Parameterisation affect and application in C-programming language}
 \end{figure}
 
-% THIS BELOW SUBSUBSECTION IS NOT INCLUDED -----------------------------
-\iffalse
-\subsubsection{Continuous Function Train Decomposition} % NOT INCLUDE
-The author of \cite{thesis} proposes using a continuous variant of the \textit{tensor-train} (TT) decomposition called the \textit{function-train} (FT). In this format, approximations can be computed using a sequence of matrix factorizations. \\
+\subsubsection{Function Train Construction}
+To extend the Chebfun functionality in computing multivariate functions, it was important to represent them en a scalable manner that tackles the curse of dimensionality. Specifically, the C3 framework seeks to represent multivariate functions in a format where the cost of storage grows polynomially, instead of exponentially, with dimension. Furthermore, representations and associated algorithms were designed to scale with a functions "rank" rather than the number of inputs. Thus algorithms were developed for converting to, and computing functions in a low-rank format called the \textit{function-train} decomposition.
 
-\noindent A multivariate function $ f : \mathcal{X} \rightarrow \Real $ in FT format is represented as
-\begin{equation}
-f(x_{1},\dots,x_{d}) = \sum_{\alpha_{0}=1}^{r_{0}}\dots\sum_{\alpha_{d}=1}^{r_{d}} f_{\alpha_{0},\alpha_{1}}^{(1)}(x_{1}) \dots f_{\alpha_{d-1},\alpha_{d}}^{(d)}(x_{d})
-\end{equation}
-where $ r_{i} \in \mathbb{Z}^{+} $ are the FT \textit{ranks}, with $ r_{0} = r_{d} = 1 $. For each input coordinate $ i = 1,\dots,d, $ the set of univariate functions $ \mathcal{F}_{i} = \left\{ f_{\alpha_{0},\alpha_{1}}^{(1)}(x_{1}) : \left[ a_{i}, b_{i} \right] \rightarrow \Real, \alpha_{i-1} \in \{1,\dots,r_{i-1}\}, \alpha_{i} , \alpha_{i} \in \{1,\dots,r_{i}\}  \right\} $ are called \textit{cores}. Each set can be viewed as a matrix-valued function and visualised as an array of univariate functions:
-\begin{equation}
-\mathcal{F}_{i}(x_{i}) = \left[ \begin{matrix}
-f_{1,1}^{(i)}(x_{i}) 	&	\dots	&	f_{1,r_{i}}^{(i)}(x_{i}) \\
-\vdots 				&	\ddots	&	\vdots \\
-f_{r_{i-1},r_{(i)}}^{i}(x_{i})	&	\dots	&	f_{r_{i-1},r_{(i)}}^{i}(x_{i})
-\end{matrix} \right]
-\end{equation}
-Thus the evaluation of a function in FT format may equivalently be posed as a sequence of $ d-1 $ vector-matrix products:
-\begin{equation}
-f(x_{1},\dots,x_{d}) = \mathcal{F}_{1}(x_{1})\dots\mathcal{F}_{d}(x_{d})
-\end{equation}
+An function-train (FT) is defined by a set of $ d $ matrix-valued functions $ \{\, \mathcal{F}_{1}(x_{1}),\cdots,\mathcal{F}_{d}(x_{d}) \,\} $, and a set of FT-ranks $ \bm{r} = [r_{0},\cdots,r_{d}] $ where $ r_{0} = r_{d} = 1 $ and $ \mathcal{F}_{i} : [a_{i}, b_{i}] \rightarrow \mathbb{R}^{r_{i-1}\times r_{i}} $ for $ i = 1, \cdots, d $. Furthermore, an evaluation of a function $ f (x) $ in FT format is obtained through a sequence of vector-matrix products:
+\begin{align*}
+	f(x) = \mathcal{F}_{1}(x_{1})\mathcal{F}_{2}(x_{2}) \cdots \mathcal{F}_{d}(x_{d}) 
+\end{align*}
+It is also helpful to think of these as matrices of univariate functions, like so:
+\begin{align}
+	f(x) = \begin{bmatrix}
+	f_{1,1}^{(1)} & \cdots & f_{1,r_{1}}^{(1)}
+	\end{bmatrix}
+	\begin{bmatrix}
+	f_{1,1}^{(2)} & \cdots & f_{1,r_{2}}^{(2)} \\
+	\vdots & & \vdots \\
+	f_{r_{1},1}^{(2)} & \cdots & f_{r_{1},r_{2}}^{(2)}
+	\end{bmatrix} 
+	\cdots
+	\begin{bmatrix}
+	f_{1,1}^{(d)} \\
+	\vdots \\
+	f_{r_{d-1},1}^{(d)}
+	\end{bmatrix}
+\end{align}
 
-\noindent With these fundamentals of a FT in mind, the author proposes a novel dynamic programming algorithm. The Markov chain approximation method approximates a continuous-space stochastic control problem with a discrete-state Markov decision process (MDP). But in this framework, the continuous value functions $ \omega $ are approximated by their discrete counterparts $ \omega^{h} $. In order to leverage low-rank decompositions, the attention is focused on situations where the discrete value functions represent the cost of discrete MDPs defined through a tensor-product discretization of the state space, and therefore, $ \omega^{h} $ can be interpreted as a $ d $-way array. In order to combat the curse of dimensionality associated with storing and computing $ \omega^{h} $, the proposal is to use the function-train decomposition.
-\fi
-% BUT IT CONTINUES ON FROM HERE ------------
+The operations of addition, multiplication, differentiation, integration, and inner products are easily performed for functions in FT format \cite{thesis}. 
 \newpage
 
-
-\section{Project Progress} \label{ProjectProgress}
+\section{Project Development} \label{ProjectProgress}
 \subsection{Work Breakdown Overview}
+This research project followed 
 The project plan has been given previously in the work breakdown structure. The full detail of this can be found in the Appendix under Item \ref{app_itemB} - Work Breakdown structure. \\
 
 \noindent To reiterate: in order to establish the validity of the novel tensor decomposition approach, this new method must be tested against a known method (the MCA method) and compared using a difficult problem. To begin, a simple problem with a known solution will be used to ensure that both libraries give the same results (deducing their validity). Thus, the MCA method has been nominated to be developed first, and a library to utilise it needs to be constructed. \\
@@ -283,7 +289,7 @@ The first step of this research project was a topic investigation. For that, the
 	\item A search statement was developed and used to find the most relevant literature
 	\item Engineering databases were researched and the most relevant databases were selected
 	\item Information sources (such as conference publications, international journals, engineering texts and standards) were identified
-	\item 3 key literatures were reviewed which matched that of the topic investigation – and from this the project proposal scope was formed
+	\item 3 key literatures were reviewed which matched that of the topic investigation - and from this the project proposal scope was formed
 	\item Published authorities in the chosen field of dynamical stochastic control were also cited	
 \end{enumerate}
 This literature assortment was paramount to the development of this research topic and project scope. It also helped to find the Tensor Decomposition library which means that time on the schedule did not need to be allocated towards writing another library but only on learning the library (which in comparison would be far less). \\
@@ -499,10 +505,18 @@ Early this semester I began porting the MATLAB script and MCA method over to the
 \noindent The benefit of utilising the C++ code base is a dramatic increase in speed: MATLAB would take around 15 seconds to complete the execution and plotting of graphs, where as this new code base takes less than a second to complete.
 \newpage
 
-\section{Upcoming Tasks}
-The next major task is to now get the script using the C3 library to solve the same 1D problem. The installation of the C3 library and its stochastic control extensions has already been completed, and has been included in the User Manual. Unfortunately the C3 library has very little documentation at the time of writing this report. But fortunately a couple of example problems have been found which will hopefully aid in the construction of the C3 script.
+\section{Comparison and Results}
+\subsection{Memory usage}
+\todo{Why does Continuous decomposition utilise so much memory?}
+\subsection{Efficiency and Accuracy}
+\todo{how accurate is c3?}
+\subsection{Solution Storage Space}
+
+\subsection{Recommendations}
 
 \newpage 
+
+\section{Conclusion}
 
 \section{References}
 \begin{thebibliography}{9}
@@ -581,30 +595,37 @@ The next major task is to now get the script using the C3 library to solve the s
 	https://en.wikipedia.org/wiki/Dynamic\_programming\#cite\_note-1
 	
 	%13
+	\bibitem{chebfun}
+	\textit{Chebfun Matlab Package}
+	[Online] Accessed September 2017
+	http://www.chebfun.org/
+	
+	%14
 	\bibitem{ft-alex}
 	A. A. Gorodetsky
 	\textit{Function-Train: A continuous analogue of the tensor-train decomposition}.
 	[Online] Accessed 2017
 	http://www.alexgorodetsky.com/papers/ft\_arxiv.pdf
 		
-	%14
+	%15
 	\bibitem{thesis} 
 	Alex Arkady Gorodetsky
 	\textit{Continuous low-rank tensor decompositions, with applications to stochastic optimal control and data assimilation}.
 	Department of Aeronautics and Astronautics, at the Massachusetts Institute of Technology
 	
-	%15
+	%16
 	\bibitem{AlexGorod}
 	A. A. Gorodetsky1`
 	\textit{Alex Gorodetsky's Website}.
 	[Online] 2017
 	http://www.alexgorodetsky.com/index.html
 	
-	%16	
+	%17
 	\bibitem{zylong}
 	Z. Y. Long, G. Ledwich and J. J. Ford
 	\textit{Nonlinear Control of Single-Machine-Infinite-Bus Transient Stability}.
 	in Proceedings Power Engineering Society General Meeting, 2006
+	
 	
 \end{thebibliography}
 \newpage
@@ -630,10 +651,11 @@ The next major task is to now get the script using the C3 library to solve the s
 	\end{figure}
 	\newpage
 	\section{Work Breakdown structure}\label{app_itemB}
+	All tasks below were given as part of the original project proposal, and thus the dates and times aligned to the first Gantt Chart given in \todo{Create reference to different gantt charts}
 	\subsection{Segment 1 - Markov Approximation Implementation}
 	\underline{\textbf{Task 1.1 Developed a Pseudo-Code}} \quad 14/4/2017 to 3/5/17 (14 Days) \\
 	
-	\noindent Before developing any code, the fundamentals of the MCA must first be understood. This task has thus been given 14 days to account for the time taken to study and apply this topic. A large part of this study will come from [3]. Also, before developing any C++ code, developing of a pseudo-code will help to establish the required procedures and tasks that will need to be coded – it will act as a guide to ensure that when code is written, it is only the necessary parts being coded (often programmers can find themselves coding unnecessarily). 
+	\noindent Before developing any code, the fundamentals of the MCA must first be understood. This task has thus been given 14 days to account for the time taken to study and apply this topic. A large part of this study will come from [3]. Also, before developing any C++ code, developing of a pseudo-code will help to establish the required procedures and tasks that will need to be coded -– it will act as a guide to ensure that when code is written, it is only the necessary parts being coded (often programmers can find themselves coding unnecessarily). 
 	The learning and developing of Pseudo-Code has not been split into two separate tasks because the best way to understand is to apply what is learnt. Thus, the learning and developing will go hand in hand for 14 days. \\
 	Resources: Will need the aforementioned book [3]. Will also need a Git server to store the current code and for future developments to be reviewed by the supervisor. This topic is expected to take quite a while to learn but it has been targeted at 14 days to be able to begin working on the script as soon as possible. \\
 		
@@ -649,7 +671,7 @@ The next major task is to now get the script using the C3 library to solve the s
 	Resources: An IDE to help develop the code faster, and in conjunction with the library. The current plan is to use Visual Studio Enterprise under a QUT Student License, because of its IntelliSense feature which will help to ensure proper use of the library. A generous 10 days has been assigned to this script to for finding of any faults (and subsequent fixes) in the library code. \\
 	
 	\noindent\underline{\textbf{Task 1.4 Extended the previous library to higher dimensions}}
-	19/6/17 – 26/7/17 (12 Days)
+	19/6/17 -- 26/7/17 (12 Days)
 	\noindent As has been clearly stated, this research project is considering high dimension state space problems. Therefore, this 12 days is crucial to ensure that this script functions properly. The higher dimension cases vary from \cite{zylong} to the UAV test bed scenario (but the fundamental concepts for both will be the same).\\
 	
 	\noindent\underline{\textbf{Task 1.5 Code debugged, optimised, and documented}} \quad 27/7/17 to 2/8/17 (5 Days) \\
@@ -676,7 +698,7 @@ The next major task is to now get the script using the C3 library to solve the s
 	
 	\noindent\underline{\textbf{Task 2.3 Extended the previous script for higher dimensions}} \quad 18/7/17 to 31/7/17 (10 Days) \\
 	
-	\noindent See Task 1.4 for reason of this task – with the difference being that this is an extension of the Tensor Decomposition script and not the Markov Approximation Script.\\
+	\noindent See Task 1.4 for reason of this task - with the difference being that this is an extension of the Tensor Decomposition script and not the Markov Approximation Script.\\
 	
 	\noindent\underline{\textbf{Task 2.4 Code debugged, optimised, and documented}} \quad 1/8/17 to 7/8/17 (5 Days) \\
 	
@@ -737,7 +759,7 @@ The next major task is to now get the script using the C3 library to solve the s
 	\subsection{Stretch Tasks}
 	\underline{\textbf{Task 5.1 Applied to live scenario}} \quad 13/10/17 to 2/11/17 (15 Days) \\
 	
-	\noindent Although the current schedule allows for this live scenario to still occur, it is possible that the current schedule will be rearranged before reaching this point. But if all goes according to plan (or even ahead of schedule) then the goal is to test the results in a live environment – with an actual UAV or a Quadcopter, and have the control devices manoeuvre through a tight gap (at a safe velocity and altitude). \\
+	\noindent Although the current schedule allows for this live scenario to still occur, it is possible that the current schedule will be rearranged before reaching this point. But if all goes according to plan (or even ahead of schedule) then the goal is to test the results in a live environment - with an actual UAV or a Quadcopter, and have the control devices manoeuvre through a tight gap (at a safe velocity and altitude). \\
 	Resources: Access to a test UAV or test Quadcopter, along with camera gear to film (or photograph) the simulation in action, and other necessary recording devices to measure the validity of the solution. 
 	\newpage
 	
@@ -780,8 +802,11 @@ The next major task is to now get the script using the C3 library to solve the s
 	\begin{equation}
 	\mathcal{W}(x(t), u^{o}(t), t) = x^{\intercal}\left(	\mathbf{\Psi}-\mathbf{P}(t)		\right)
 	\end{equation}
-	\subsection{User Manual for Installing and Running code base}
+	\newpage
 	
+
+	\includepdf[scale = 0.9,pages=1,pagecommand=\section{User Manual for Installing and Running code base}]{../UserManual.pdf}
+	\includepdf[pages=2-]{../UserManual.pdf}
 \end{appendices}
 
 \end{document}
