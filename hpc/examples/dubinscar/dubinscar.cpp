@@ -101,7 +101,7 @@ void ExecuteDubinsCar(unsigned int iterations)
     // x is element of {-4, 4}, y is element of {-4, 4}, and theta is element of {-pi, pi}
     double leftBound[] = {-4.0, -4.0, -M_PI};
     double rightBound[] = {4.0, 4.0, M_PI};
-    uint gridLength[] = {100, 100, 100};
+    uint gridLength[] = {45, 45, 45};
 
     // Now the control space consists of three options U = {-1, 0, 1}
     double alphaStart = -1;
@@ -141,7 +141,7 @@ void ExecuteDubinsCar(unsigned int iterations)
     }
     markovEulerFile.close();
 
-    /*
+
     // Also create file with MCA optimal control data
     ofstream markovControlFileStream;
     markovControlFileStream.open("ControlResult.dat", std::ofstream::out);
@@ -184,7 +184,6 @@ void ExecuteDubinsCar(unsigned int iterations)
 
     }
     markovControlFileStream.close();
-    */
 
     // Plot the data using gnuplot ------------------------------------------------------ //
     // TODO: Put in plotting commands

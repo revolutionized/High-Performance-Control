@@ -110,8 +110,8 @@ MarkovChainApproximation::MarkovChainApproximation(MarkovChainParameters& mcp,
     }
 
     // Set allocation for computation convenience vectors to avoid having to reassign the memory in loops
-    pHat_ = new vector<double>(3); // 3 because always probability to move up one, down one, or stay in same place
-    vProbs_ = new vector<double>(3); // Same as for pHat.
+//    pHat_ = new vector<double>(3); // 3 because always probability to move up one, down one, or stay in same place
+//    vProbs_ = new vector<double>(3); // Same as for pHat.
     vSummed_ = new vector<vector<double>>(mcp.getAlphaLength());
     for (auto& ii : *vSummed_)
     {
@@ -124,21 +124,7 @@ MarkovChainApproximation::MarkovChainApproximation(MarkovChainParameters& mcp,
 
 bool MarkovChainApproximation::allStreamsOpen()
 {
-    for (auto&& oldVFile : *oldVFile_)
-    {
-        if (!oldVFile.stream->is_open())
-        {
-            return false;
-        }
-    }
-    for (auto&& newVFile : *newVFile_)
-    {
-        if (!newVFile.stream->is_open())
-        {
-            return false;
-        }
-    }
-    return minAlphaFile_.stream->is_open();
+    return (oldVFile_.stream->is_open() && newVFile_.stream->is_open() && minAlphaFile_.stream->is_open());
 }
 
 MarkovChainApproximation::~MarkovChainApproximation()
