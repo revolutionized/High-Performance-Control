@@ -101,7 +101,7 @@ void ExecuteDubinsCar(unsigned int iterations)
     // x is element of {-4, 4}, y is element of {-4, 4}, and theta is element of {-pi, pi}
     double leftBound[] = {-4.0, -4.0, -M_PI};
     double rightBound[] = {4.0, 4.0, M_PI};
-    uint gridLength[] = {45, 45, 45};
+    uint gridLength[] = {70, 70, 70};
 
     // Now the control space consists of three options U = {-1, 0, 1}
     double alphaStart = -1;
@@ -125,7 +125,7 @@ void ExecuteDubinsCar(unsigned int iterations)
 
     // The EulersMethod1D function has a solve that allows you to pass it the MCA object, and thus it utilises the MCA
     // ODE state space results and optimal control results.
-    double initGuessPtr[dim] = {3.0, 2.5, M_PI/2.0};
+    double initGuessPtr[dim] = {-1.0, 0.0, 3*M_PI/4.0};
     euler.solve(odeFunction, initGuessPtr, &markovCA);
 
     cout << "=== Writing results to file ===" << std::endl;
