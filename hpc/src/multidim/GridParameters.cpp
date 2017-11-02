@@ -88,9 +88,9 @@ unsigned int GridParameters::getGridLength(unsigned int dimension) const
 }
 
 
-double GridParameters::getDeltaGrid(unsigned int gridIndex) const
+double GridParameters::getDeltaGrid(unsigned int dimension) const
 {
-    return deltaGrid_[gridIndex];
+    return deltaGrid_[dimension];
 }
 
 void GridParameters::getGridAtIndices(const GridIndex& gridIndices, double* gridLocOut) const

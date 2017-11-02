@@ -24,7 +24,7 @@ void diffFunction2(const double* x, double* out);
 
 void sigmaFunction2(const double* x, double* out);
 
-///
+/// This matrix
 /// \param x
 /// \param out Size of matrix is dimension*dimension. Since this is a single dimension that matrix is just 1x1, and for
 /// this particular example it's a zero matrix

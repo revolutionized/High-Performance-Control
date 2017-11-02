@@ -4,3 +4,6 @@ cmake-build-debug
 
 # Build files
 build
+
+# Visual Studio Project Files
+.vs

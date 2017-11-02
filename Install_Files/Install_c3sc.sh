@@ -1,4 +1,3 @@
-# Assumes it is in the 
 RED='\033[1;31m'
 NC='\033[0m' # No color
 echo -e " ${RED}-------------------- Installing C3SC Library ${NC}"

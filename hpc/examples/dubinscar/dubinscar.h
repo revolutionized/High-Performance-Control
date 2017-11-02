@@ -15,6 +15,7 @@ void diffFunction(double* x, double* out);
 void driftFunction(double* x, double alpha, double* out);
 double costFunction(double* x, double alpha);
 void odeFunction(double* x, double alpha, double* out);
+void diffusionMatrix(double* x, double** out);
 
 /// Will perform Markov Chain Approximation with the Dubin's car example
 /// \param iterations Defaults to 100 if an incorrect number is given in the command line arguments. It doesn't mean

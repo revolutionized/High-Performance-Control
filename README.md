@@ -25,7 +25,8 @@ Refer to UserManual.pdf for the full installation manual. But the required compo
 - [CDYN Library](https://github.com/goroda/cdyn)
 - [C3SC Library](https://github.com/goroda/c3sc)
 
-Without this components this project really wouldn't exist!
+Without these components this project really wouldn't exist! Additional third party libraries used are:
+- [Tclap Library](http://tclap.sourceforge.net/)
 
 ### Contributing
 
