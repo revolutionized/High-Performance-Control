@@ -1,5 +1,6 @@
 %BEGIN_FOLD % Package includes
 \documentclass[11pt,draftd]{article}
+\usepackage[nottoc]{tocbibind}
 \usepackage{color}
 \usepackage{hyperref}
 \hypersetup{colorlinks, citecolor=green, filecolor=black, linkcolor=blue, urlcolor=blue }
@@ -69,16 +70,15 @@
 \renewcommand{\abstractname}{Executive Summary}
 \begin{abstract}
 	\[\]
-	This project aims to contribute to the knowledge of optimal control, especially in the field of high performing computational algorithms for solving optimal control. The problems being considered and tested are stochastic and non-linear. A key area within this field is dynamic programming which suffers from the curse of dimensionality. This project seeks to utilise new approaches to overcome the barrier of the curse of dimensionality and improve the performance of numerical methods on complex problems. \\
+	This project aimed to contribute to the knowledge of optimal control, especially in the field of high performing computational algorithms for solving optimal control. The problems being considered and tested are stochastic and non-linear. A key area within this field is dynamic programming which suffers from the curse of dimensionality. This project seeks to compare and utilise new approaches to mitigate the barrier of the curse of dimensionality and improve the performance of numerical methods on complex problems. \\
 	
-	\noindent A novel approach has been presented which utilises a continuous linear algebra technique, known as the tensor decomposition. It claims to improve the compression of the control optimal solution as well as to reduce the computational complexity. A comparison study will be conducted with this new approach against a well-known and highly accurate method: the Markov Chain Approximation. To approach the comparison study, a library for utilising the Markov Chain Approximation will be developed. A library for using the tensor decomposition method has already been developed for Unix based systems. Using a known problem and a UAV simulation test bed, the two methods will have their computational speed and storage efficiency compared. \\
+	\noindent A novel approach has been presented which utilises a continuous linear algebra technique, known as the tensor decomposition. It claims to improve the compression of the control optimal solution as well as to reduce the computational complexity. A comparison study was conducted with this new approach against a well-known and highly accurate method: the Markov Chain Approximation. To approach the comparison study, a library for utilising the Markov Chain Approximation was be developed. A library for using the tensor decomposition method has already been developed for Unix based systems. \\
 	
-	\noindent A schedule has been proposed to break this project down into manageable tasks. This report shows the current progress in this schedule and any adjustments needed to be made. If significant progress is made in the schedule, then deployment into a real/physical environment will be sought after. \\
+	\noindent A Markov Chain Approximation library was first constructed for one-dimensional problems in a MATLAB script. Once the algorithms were verified, the code was ported over to C++ and extended to higher dimensions. User manuals and code documentation was made to alleviate future problems or to help with steep learning curves. \\
 	
-	\noindent Previous to this report, a project proposal and a literature assortment were conducted. The literature assortment was paramount to the development of this research topic and project scope. It also helped to find the tensor decomposition method and library which meant that time on the schedule did not need to be allocated towards writing another library, but instead, only on learning how to use it. The project proposal helped to define the scope of this research project, and part of that proposal's work has been reflected in this report. \\
+	\noindent Using the Dubin Paths control optimisation problem, the two methods were had their computational speed and storage efficiency compared. It was recommended to use the developed Markov Chain Approximation library for sufficiently small state space problems, and to use the tensor decomposition library for sufficiently large sate space optimisation problems. Both were capable of solving nonlinear stochastic problems, but at different speeds and with different computational requirements depending on the size of the problem and accuracy being considered. \\
 	
-	\noindent This report in its current state reflects the progress that has been achieved thus far. It also analyses the alignment of the previously proposed schedule to the actual task accomplishment. Adjustments are considered and proposed as appropriate.
-	\todo{Fix exec summary}
+	\noindent A schedule was created to break this project down into manageable tasks. This report is the culmination of the fulfilment of many of those tasks. Not all tasks were fully realised, and further investigation can be carried out to extend the knowledge of this report. This report in its current state reflects the final studies, comparison results, and recommendations that have been achieved. \\ 
 \end{abstract}
 \pagenumbering{gobble}
 %END_FOLD
@@ -90,6 +90,8 @@
 \setcounter{page}{1}
 \renewcommand{\contentsname}{Table of Contents}
 \tableofcontents
+\[\]
+\listoffigures
 \newpage
 %END_FOLD
 
@@ -152,9 +154,9 @@ Hence, the delivered libraries must be intuitive and documented appropriately, a
 	\begin{itemize}
 		\item Ubuntu 16.04 operating system (64 bit)
 		\item 8GB of Ram
-		\item Intel i5 Processor (quad-core), (Haswell code-name)
+		\item Intel i5 Processor (quad-core), (Haswell architecture)
 	\end{itemize}
-	\item The software should require no more than the allotted 8gb of RAM and execute completely in under 60 minutes
+	\item The software should require no more than the allotted 8GB of RAM and execute completely in under 60 minutes
 	\item The resulting solution to this script should also exist in a file which is no larger than 8GB (allowing it to fit into a USB and be transported easily)
 \end{itemize}
 
@@ -163,7 +165,7 @@ Hence, the delivered libraries must be intuitive and documented appropriately, a
 \subsection{Approach / Methodology}
 To approach the comparison study, there needed to be a library for accessing and testing both methods. Fortunately, a library for using the Tensor Decomposition method has already been completed and openly shared \cite{c3c} \cite{c3cs}. Thus, first an MCA software library was to be written for a one dimensional case. From this, the two methods would be tested and confirmed to be accurate using a problem with a known solution. Testing of computational efficiency is not as applicable at this stage but would be conducted nonetheless.\\
 
-Following this, the MCA library would be further developed to account for problems of a higher dimension. Then the two methods will be compared on a complex problem using a provided UAV simulation test bed. This test would compare computational storage needed, time taken to compute, and accuracy of the results. See the following figure for a visual depiction of the overall tasks.
+Following this, the MCA library would be further developed to account for problems of a higher dimension. Then the two methods will be compared on a complex problem. This test would compare computational storage needed, time taken to compute, and accuracy of the results. See the following figure for a visual depiction of the overall tasks.
 
 \begin{figure}[h]
 	\centering
@@ -172,16 +174,15 @@ Following this, the MCA library would be further developed to account for proble
 	\caption{Section Breakdown of Methodology}
 \end{figure}
 
-The aforementioned steps were broken down into manageable tasks, and can be seen in the Appendix under Item \ref{app_itemB} - Work Breakdown structure. Current progress along this timeline is given in Section \ref{ProjectProgress} Project Progress (see page \pageref{ProjectProgress}). If significant progress is made in the schedule, then deployment into a real/physical environment will be sought after.
+The aforementioned steps were broken down into manageable tasks, and can be seen in the Appendix under Item \ref{app_itemB} - Work Breakdown structure. 
 \newpage
 \section{Literature Review} 
 \subsection{Background to Optimal Control}
-\todo{Weak description of dynamic programming}
 A control system consists of subsystems and processes assembled for the purpose of obtaining a desired output with desired performance, given a specified input \cite{nise}. Our interest lies in the topic of optimisation, known as the field of optimal control: to find the mathematical optimisation for control problems \cite{ieeeControl}. An optimal control is usually represented in a set of differential equations describing the paths of the control variables that minimise the cost function -- a mathematical formula used to graph the cost of an application or process given certain inputs \cite{costfunction}. \\
 
 The optimization of control problems arises in many settings, ranging from efficiently managing heating systems to improving entire economies \cite{powell}. Other examples include: effective aircraft landing, managing large stock of blood inventories, scheduling numerous fleets of vehicles, selling assets, planning and integrating large electrical grids, and even playing a game of tic-tac-toe or backgammon. Each of these problems involve making decisions, then observing results, followed by more decision making and so on. Although such problems can sometimes be straightforward to formulate, they are not always as simple to solve. \\
 
-Dynamic programming is a method for solving complex optimisation problems: by breaking it down into a collection of simpler sub problems - solving each of those sub problems just once, and storing their solutions \cite{wikiDyn}. Ideally, this method is best built using a memory-based data structure - then on the next occurrence of the same sub problem, the computed solution already exists and is not required to be recalculated. This tactic can save computation time at the expense of storage space. In the dynamic programming approach, we seek an optimal value function that is equal to the optimal cost function. In continuous-time and space, the optimal value function is the solution to the Bellman equation. \todo{reference}\\
+Dynamic programming is a method for solving complex optimisation problems: by breaking it down into a collection of simpler sub problems - solving each of those sub problems just once, and storing their solutions \cite{wikiDyn}. Ideally, this method is best built using a memory-based data structure - then on the next occurrence of the same sub problem, the computed solution already exists and is not required to be recalculated. This tactic can save computation time at the expense of storage space. In the dynamic programming approach, we seek an optimal value function that is equal to the optimal cost function. In continuous-time and space, the optimal value function is the solution to the Bellman equation.\\
 
 \subsection{Contribution to Modern Control Systems}
 Dynamic programming is the approach we have decided to use in solving complex problems. Unfortunately, it comes with something called the curse of dimensionality, and if we can improve upon this barrier then the future of engineering within optimal control can be greatly benefited. \\
@@ -249,12 +250,12 @@ Fortunately, the library for using tensor decomposition techniques has already b
 Difficulties prevented the full realisation of this plan and hence it was clearly important to help alleviate these problems from future work, and thus a Git repository has been created which has the MCA library (with examples), and automated download scripts for the C3 library. This Git repository can be found at \url{https://github.com/revolutionized/High-Performance-Control/}. \\
 
 To avoid the installation problems in the future, a user manual was also generated which covers a step-by-step installation of all necessary components for the MCA and C3 libraries to work (on any of the three major operating systems: Windows, MacOS, and Ubuntu). The user manual is included in the Git repository. A documentation of the MCA C++ classes has also been auto-generated using \href{https://www.stack.nl/~dimitri/doxygen/}{Doxygen}, explaining the layout and usage of the code. An example of this documentation can be seen in the following figure. \\
-\todo{update doxygen figure}
-\begin{figure}[h!]
+
+\begin{figure}[H]
 	\centering
 	\label{doxygen-documentation}
-	\includegraphics[scale = 0.63]{images/doxygen-example}
-	\caption{Autogenerated documentation of code}
+	\includegraphics[scale = 0.55]{images/doxygen-example}
+	\caption{Html based auto-generated documentation of code}
 \end{figure}
 \[\]
 
@@ -443,14 +444,13 @@ During the course of the first semester, time had been put aside to learn the ba
 
 The first step taken was to recreate an approximation to the solution using Euler's method. The results can be seen in the next two figures. Upon successfully completing this, the next task was to approximate the optimal control using the MCA method. Figure \ref{eulersmethod2} shows what value to set the control value to in order to minimise the cost function. The $ y $ axis is the level of the control variable, and the $ x $ axis is time in seconds. Where as figure \ref{eulersmethod1} shows the state of the carts velocity over time. Again, the $ x $ axis is time in seconds and this time the $ y $ axis is the one-dimensional velocity. Obviously when the brakes are applied with an exponential decay, we would expect the carts rate of slowing down to be an exponential decay. 
 
-\todo{change figure so it doesn't have euler's in it}
-\begin{figure}[h!]
+\begin{figure}[H]
 	\centering
 	\label{eulersmethod1}
 	\includegraphics[scale = 0.6]{images/EulersApproximateState}
 	\caption{Euler's approximation method results}
 \end{figure}
-\begin{figure}[h!]
+\begin{figure}[H]
 	\centering
 	\label{eulersmethod2}
 	\includegraphics[scale = 0.6]{images/EulersApproximateControl}
@@ -516,24 +516,34 @@ Now we define the normalising coefficient:
 \begin{equation*} 
   Q^{h}(x,\alpha) = \sum_{i}a_{i,j}(x) - \sum_{i,j:i\ne j}\lvert a_{i,j}(x) \rvert/2 + h\sum_{i}\lvert b_{i}(x,\alpha) \rvert 
 \end{equation*} 
-This now makes the interpolation interval as: 
-\begin{equation*} 
-  \Delta t^{h}(x,\alpha) = \frac{h^{2}}{Q^{h}(x,\alpha)} 
+We define the interpolation interval as:
+\begin{equation*}
+	\Delta t^{h}(x,\alpha) = \frac{h^{2}}{Q^{h}(x,\alpha)}
 \end{equation*} 
-We define the transition probabilities as: 
-\begin{align*} 
+and transition probabilities as follows:
+\begin{align*} 7
   p^{h}(x, x\pm e_{i}h \,\vert\, \alpha) &= \frac{a_{ii}/2 - \sum_{j, j\ne i} \lvert a_{i,j}(x) \rvert /2 + hb_{i}^{\pm}(x,\alpha)  }{Q^{h}(x,\alpha)} \\ 
   p^{h}(x, x + e_{i}h + e_{j}h \,\vert\, \alpha) &= p^{h}(x, x - e_{i}h - e_{j}h) = \frac{a_{i,j}^{+}}{2Q^{h}(x,\alpha)} \\ 
   p^{h}(x, x + e_{i}h - e_{j}h \,\vert\, \alpha) &= p^{h}(x, x - e_{i}h + e_{j}h) = \frac{a_{i,j}^{-}}{2Q^{h}(x,\alpha)} \\ 
 \end{align*} 
 For $ y $ not taking on of the listed values, we define $ p^{h}(x,y\vert \alpha) = 0$. 
-\subsubsection{title} 
+\subsubsection{MCA Code Library Construction} 
+The multidimensional code structure has been developed in a modular way; such that additional plugs, or methods, can be utilised in the future. It as a whole was title the \textit{high performance computing} framework, but is mostly referred to throughout this report as the MCA library. It's simple procedure for how the code functions is depicted in the flowchart below.
 
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.5]{images/code-flowchart.jpg}
+	\caption{Flowchart of High Performance Computing Framework}
+\end{figure}
+
+If a different technique was desired (e.g. in place of Euler's method, use Newton's method), it could be quickly developed and easily integrated into the high performance computing framework. The solution to a differential stochastic system can be currently saved as a '.dat' file; to be displayed using Gnuplot. Or it can be saved as a '.mat' file; to be loaded and displayed using Matlab. Future examples are also easily added. \\
+
+Future improvement for this framework will be to directly incorporate the C3 library into it (to allow users to choose to use the C3 method as an option instead of MCA, for example). Studies carried on later in this report were conducted with the C3 library separate to the high performance computing framework.
 \newpage
 
 \section{Comparison and Results}
 \subsection{Extended Dimensional Problem} 
-To really compare the two methods, we needed to use a mathematical scenario of multiple dimensions. The example chosen to test against is a well known one called Dubin's Path\todo{include reference}. We first consider this in the standard three-state "car" problem with stochasticity added. And our differential system wishing to be solved is: 
+To really compare the two methods, we needed to use a mathematical scenario of multiple dimensions. The example chosen to test against is a well known one called Dubin's Path \cite{reeds}. We first consider this in the standard three-state "car" problem with stochasticity added. And our differential system wishing to be solved is: 
 \begin{align*} 
   dx(t) &= cos(\theta(t))dt + d\omega_1 (t) \\ 
   dy(t) &= sin(\theta(t))dt + d\omega_2 (t) \\ 
@@ -548,19 +558,120 @@ We consider the states of $ x \in (-4,4),\, y\in(-4,4) $, and $ \theta \in (-\pi
 \end{align*} 
 Stage costs are also set to $ g(x,u) = 1 $.  
 \subsubsection{Trajectory Results} 
-Before we begin analysis we have a look at the solution as it starts from three different  
+Before we begin analysis of comparison results we first have a look at the solution to the Dubin's Path control optimisation problem solution. Using both frameworks / libraries, we calculate the optimal control and then use that control while simulating the path to take if starting from different locations. First consider the trajectory of the path when it's starting location is $ (x = -1.0,\, y = 0.0)$ with angle $\theta = 135^{\circ} $. The result of each of using the libraries is shown in the figure below.
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[scale=0.65]{images/traj1.jpg}
+	\caption{Comparison of trajectories starting at $ (x=-1.0, y = 0.0, \theta = 135^{\circ}) $}
+\end{figure}
+
+Clearly the MCA library has errors (or code bugs) in it, as the trajectory neither begins at the correct angle, nor does the system converge towards the absorbing boundary at the origin. All errors in the code base have been noted in the code comments themselves (as to-do items), and thus will not be discussed in detail here. The MCA method does however have it's dynamic equation diverging at each new iteration. This is occurring because the off-diagonal terms of the covariance matrix are much greater than the diagonal terms -- a necessary condition for the finite approximation method. Thus, future development will need to address this issue. \\
+
+Although the resulting trajectory (and control trajectory) are incorrect for the MCA, the code structure is at a point where performance was still tested --- once the errors are fixed, the performance is not expected to drastically alter to what we will be investigated here. \\
+
+Now we consider the staring location of $ (x = 3.0,\, y = 2.0) $ with starting angle $ \theta = -90^{\circ} $. The result of each of the libraries is shown in the figure below.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.65]{images/traj2.jpg}
+	\caption{Comparison of trajectories starting at $ (x = 3.0,\, y = 2.0, \theta = -90^{\circ}) $}
+\end{figure}
+Again it should be noted that the MCA library is not calculating the correct optimal control, and appears to be starting in an incorrect direction. \\
+
+The final starting location we consider is $ (x = -3.0,\, y = -1.0) $ with starting angle $ \theta = 0.3^{r} $
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.65]{images/traj3.jpg}
+	\caption{Comparison of trajectories starting at $  (x = -3.0,\, y = -1.0, \theta = 0.3^{r}) $}
+\end{figure}
+This time the MCA version did make it to the absorbing region, but it's possible this was out of whim luck, as again; neither the starting direction nor the optimal control values are correct.
+
 \subsection{Memory usage}
-\todo{Why does Continuous decomposition utilise so much memory?}
+The first component of computation performance we consider, is that of the required memory needed in calculations. Each framework obviously solves using different techniques, but by considering how much memory is needed in computation, we can determine if such a framework is only feasible on dedicated [powerful] hardware, or if it can even be utilised on a small embedded device. The results are as follows:
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.6]{images/c3Memory.jpg}
+	\caption{}
+\end{figure}
+
+We see from the plots that the MCA method is far less memory expensive per discretisation level. The MCA library also has no difference in memory usage for the number of iterations used. Although the memory used in the MCA algorithms use far less memory, they do suffer from the curse of dimensionality with run-time, as will be seen later. \\
+
+The C3 library appears to grow exponentially in memory usage with an increase of discretisation level (and possibly linearly with the number of steps used). One reason why so much memory may be used, is due to the fact that the C3 library uses function-trains, which as we saw earlier, are a multiplication of multivariate functions (or multiplication of matrices containing univariate functions) and each matrix had the size $ d\times d $, where $ d = \text{discretisation levels} $.
+
+\newpage
+
 \subsection{Efficiency and Accuracy}
-\todo{how accurate is c3?}
+The next component we consider in this computational performance comparison, is that of efficiency and accuracy. The following figure shows the time take to solve the Dubin's path optimisation problem (and to simulate it's trajectory):
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.47]{images/c3Performance.jpg}
+	\caption{Run-time for processing Dubin's Path optimisation problem with C3 and MCA}
+\end{figure}
+
+As was noted previously, the MCA method is not obtaining the correct results -- but it's computational complexity is considered not to change drastically once it is working. We can see that the MCA method clearly suffers from the curse of dimensionality, in that it's computation run-times scale exponentially as we scale the state space. The run-time also scales linearly with the number of iterations used; but ideally this would converge, and thus the number of iterations can be reduced by guessing a closer dynamic equation initial value. For the smaller discretisations (and hence smaller state space problems), the MCA method was a lost faster. \\
+
+The goal of the C3 framework was to scale polynomially instead of exponentially -- and it appears to do so. It also appears that some discretisation values perform faster than lower discretisations (as was the case for 14 discretisation points over 9 discretisation points). Why this happens was not investigated entirely, but would serve useful for further performance studies. The C3 framework also appeared to utilise previously calculated values to speed up it's process - for a fair comparison study, all previous values were wiped before a new test was conducted. The MCA library, as it currently stands, does not utilise previous data. \\
+
+The C3 framework appeared to also utilise multi-threading for the Dubin's path optimisation problem (but not for other examples). For a fair comparison, we should consider what the run-time of the MCA would have been if we had utilised multi-threading (perhaps by splitting the grid into the number of available thread's and combining all dynamic equations for those particular grid values into the total dynamic equation), we could have effectively reduced the time taken by a factor of 4 (as the machine tested on had four available threads). The run-time would then have been closer to that of the C3 library. In future comparisons this is a crucial point to consider. \\
+
+Because the MCA method was not accurate a comparison of accuracy could not be fully realised. Suffice it to say, the C3 framework always converged, and all starting location for Dubin's path would still result in the trajectory landing in the absorbing region (in what appears to be an optimised way).
+
 \subsection{Solution Storage Space}
+We now look at the component of file solution storage size. This refers to size of the collection of files needed to define the optimal control for the Dubin's path problem. The results are below.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[scale=0.57]{images/c3Storage.jpg}
+	\caption{File storage size for optimal control of Dubin's path problem with C3 and MCA}
+\end{figure}
+
+In this case, the difference was drastic between the C3 library and the MCA library. The MCA library's solutions to several megabytes of storage, where as the C3 library didn't go above 0.2 of a megabyte. We recall to the fact that C3 works on continuous function space instead of discrete -- thus the solution maps to a function call rather than to values along discretised locations, and hence the solution is far smaller. The MCA library on the other hand keeps track of the optimal control value for each possible location the path could be at. With 100 discretisations, along 3 dimensions, we need to record at least $ 100^{3} $ control values. They were also stored with 4 digit precision, and each dimension value had to be added for reference. It obviously adds up pretty quickly with each discretisation value! \\
+
+Future improvements would utilise this storage file so that the computations would be simpler and quicker (because the optimal control has already been solved, and only trajectories need to be completed). Future improvements could also have each grid / dimension store only the required parameters to recreate them (assuming we continue with uniform grids). Then we only need the control value, and effectively reduce the storage size by the number of dimensions. \\
 
 \subsection{Recommendations}
+Through the comparison study, it has become sufficiently clear that the performance of both the C3 and MCA methods differ based on the scale of the problem. Ultimately we have considered
+It is recommended to use the tensor decomposition (noted as C3 library/framework throughout the report) on stochastic optimal control problems with sufficiently large state-space problems. But a dedicated hardware system is required, due to the large memory it needs for it's computation. The final storage solution is also small and easily portable, it still requires the C3 framework interpretation and hence is only applicable on systems with large memory (i.e. it cannot effectively be placed on small devices). For stochastic optimal control problems with small state-space problems, the MCA method should be used because it is faster, uses far less memory, and it's storage file is reasonable.
+
+A final consideration of using the C3 library, is that even though it's solution storage file was small (making it easily portable), it required the interpretation (and hence computations) of the C3 framework. Thus, it may not be feasible to use this method on a hardware that does not support large memory usage.
 
 \newpage 
 
 \section{Conclusion}
+In conclusion, this research project began with looking into the challenges of solving optimal control problems, and worked towards improving the techniques often used to solve them by completing a comparison study between well-known approaches and new novel approaches. The optimal control problems considered in this project were non-linear stochastic and were motivated by the problem of UAV motion planning and control for passage through tight gaps. \\
 
+Dynamic programming was the approach in solving these complex problems, but it comes with the curse of dimensionality. This curse of dimensionality basically means that the computational complexity (and hence, the run-time) for solving dynamic programming problems grows exponentially with the number of dimensions considered in the state space. \\
+
+A novel approach in continuous computational linear algebra was developed by Alex Gorodetsky \cite{alex-c3}, known as the tensor decomposition method. It claims to improve upon the performance of solving non linear stochastic control problems and suggests that it can mitigate the curse of dimensionality. A comparison study was sought after to test the accuracy and efficiency of this novel approach against another well-known method: the Markov Chain Approximation (MCA) \cite{kushner}. \\
+
+To approach the comparison study an MCA software library was written first for a one dimensional case, and then extended to higher dimensions. This research project followed a project plan which been given previously in the work breakdown structure. The full detail of this can be found in the Appendix under Item \ref{app_itemB} - Work Breakdown structure. \\
+
+Difficulties prevented the full realisation of this plan and hence to help alleviate these problems from future work a Git repository was created which has the MCA library (with examples), and automated download scripts for the C3 library. A user manual was also created which covers a step-by-step installation of all necessary components for the MCA and C3 libraries to function. Documentation of the MCA C++ classes was also generated: explaining the layout and usage of the code. \\
+
+A mathematical derivation of the MCA was given for a one-dimensional problem. Pseudo-Code was developed for it and tested in MATLAB. Once the MATLAB script was functioning correctly, it was ported over to C++ and also confirmed to work. The mathematical derivation of the MCA was given for a multi-dimensional problem. Following this the C++ code was extended to accommodate $ n $-dimensional problems. \\
+
+A comparison study was then conducted between the MCA library and the C3 library. The Dubin's path control optimisation problem was used at the test-bed. Memory usage, run-time speed/efficiency, and file solution storage size were compared. Ultimately, the key questions that were considered in the start of this project were answered throughout this study and report, and are summarised here:
+\begin{enumerate}
+	\item Is the novel tensor decomposition method more computationally efficient?
+\end{enumerate}	
+It is for large state-space problems. Not for smaller, less complex systems.
+\begin{enumerate}
+	\item[2.] How much accuracy is lost from using this method? Is it a feasible approach?
+\end{enumerate}		
+Accuracy did not seem to be affected, but an invalid test was conducted on this, and thus future research is required.
+\begin{enumerate}
+	\item[3.] What are the requirements, or specific scenarios, that this tensor decomposition works for?
+\end{enumerate}
+This was not sufficiently researched, and is an important topic that needs further investigation.
+\begin{enumerate}
+	\item[4.] When is it more appropriate to use the tensor decomposition method over other well-known approaches? And when is it not best to use it?
+\end{enumerate}
+It is recommended to use the tensor decomposition (noted as C3 library/framework throughout the report) on stochastic optimal control problems with sufficiently large state-space problems. But a dedicated hardware system is required, due to the large memory it needs for it's computation. The final storage solution is also small and easily portable, it still requires the C3 framework interpretation and hence is only applicable on systems with large memory (i.e. it cannot effectively be placed on small devices). For stochastic optimal control problems with small state-space problems, the MCA method should be used because it is faster, uses far less memory, and it's storage file is reasonable. \\
+
+Future work requires the MCA library to change from using the finite difference approximation algorithm as its base derivation, due to divergence happening on multi-dimensional problems. Further integration of the C3 library into the high performance framework should be completed. Sufficiently more difficult control problems should be tested using the C3 library to test its full potential. Importantly, further investigation should be carried out for what the specific requirements are for the tensor decomposition method to work.
 \newpage
 
 \section{References}
@@ -671,6 +782,11 @@ Before we begin analysis we have a look at the solution as it starts from three 
 	\textit{Nonlinear Control of Single-Machine-Infinite-Bus Transient Stability}.
 	in Proceedings Power Engineering Society General Meeting, 2006
 	
+	%18 
+	\bibitem{reeds}
+	J. A. Reeds and L. A. Shepp
+	\textit{Optimal paths for a car that goes both forwards and backwards}.
+	in Pacific Journal of Mathematics, Vol. 145, No. 2, 1990
 	
 \end{thebibliography}
 \newpage
@@ -717,7 +833,7 @@ Before we begin analysis we have a look at the solution as it starts from three 
 \newpage
 
 	\section{Work Breakdown structure}\label{app_itemB}
-	All tasks below were given as part of the original project proposal, and thus the dates and times aligned to the first Gantt Chart given in \todo{Create reference to different gantt charts}
+	All tasks below were given as part of the original project proposal, and thus the dates and times aligned to the first Gantt Chart produced (for Semester 1).
 	
 	Note that the time frames had originally been put into place to aim for deployment in a real environment at the end of the year, but this ‘real’ deployment is not the key component of this research project. The original schedule also had planned to have a 1-dimensional problem verified and compared using both the MCA method and the continuous decomposition method. This became a harder and longer task than anticipated because of several reasons: \\
 	\begin{itemize}

@@ -125,7 +125,7 @@ void ExecuteDubinsCar(unsigned int iterations)
 
     // The EulersMethod1D function has a solve that allows you to pass it the MCA object, and thus it utilises the MCA
     // ODE state space results and optimal control results.
-    double initGuessPtr[dim] = {-1.0, 0.0, 3*M_PI/4.0};
+    double initGuessPtr[dim] = {-3.0,-1.0, 0.3};
     euler.solve(odeFunction, initGuessPtr, &markovCA);
 
     cout << "=== Writing results to file ===" << std::endl;
@@ -142,6 +142,8 @@ void ExecuteDubinsCar(unsigned int iterations)
     markovEulerFile.close();
 
 
+	// todo: Need to plot control over time, not control over state space
+/*
     // Also create file with MCA optimal control data
     ofstream markovControlFileStream;
     markovControlFileStream.open("ControlResult.dat", std::ofstream::out);
@@ -184,7 +186,7 @@ void ExecuteDubinsCar(unsigned int iterations)
 
     }
     markovControlFileStream.close();
-
+*/
     // Plot the data using gnuplot ------------------------------------------------------ //
     // TODO: Put in plotting commands
 }
